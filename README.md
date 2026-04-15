@@ -10,9 +10,10 @@ still has material gaps:
   prove the scheduler is impossible to break on unseen inputs.
 - The zero-leak requirement is still unproven because `valgrind` was not
   available in the WSL environment used for verification.
-- AFL++ campaigns have not been executed yet. The harnesses, starter corpora,
-  and strategy below are now in place, but no real coverage run has been
-  validated with ASAN or UBSAN.
+- Fuzzing scaffolding is in place (`fuzz/*`, in-memory parser target, corpus,
+  dictionary, and `make fuzz-*` workflow), but campaign evidence is still
+  missing: no published baseline run metrics, no minimized crash triage set, no
+  regression replay suite, and no sustained multi-hour coverage report.
 - The ML layer is not yet a fully validated official TabPFN client workflow.
   The current committed model artifact was produced for smoke testing, not as a
   high-confidence trained predictive layer.
@@ -89,6 +90,23 @@ fits this project instead of copying generic advice.
 
 The recommendations in this section were cross-checked against primary sources
 on April 15, 2026. See `References` at the end.
+
+### Current Gaps (What Is Still Missing)
+
+Fuzzing is partially implemented, not complete. The repository still needs:
+
+- Executed campaign artifacts: at least one timed parser run and one queue run
+  with saved `fuzzer_stats` and summarized `execs_per_sec`, `paths_total`, and
+  `unique_crashes`.
+- Sanitizer-validated runs: evidence from ASAN+UBSAN campaigns (not only build
+  scripts) and a documented replay path for sanitizer verification.
+- Corpus lifecycle outputs: post-run corpus minimization outputs (`afl-cmin`)
+  and a curated promoted corpus update process.
+- Crash triage and replay: minimized crash files (`afl-tmin`) plus a
+  deterministic replay command and regression directory wired into CI or at
+  least `make`-based test flow.
+- Logic-oracle fuzz target: a scheduler invariant harness around `schedule()`
+  to find semantic bugs that do not crash.
 
 ### What Fuzzing Is
 
