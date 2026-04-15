@@ -187,6 +187,7 @@ def main():
     parser.add_argument("--min-gpu-ram-gb", type=float, default=16)
     parser.add_argument("--offer-limit", type=int, default=20)
     parser.add_argument("--timeout-seconds", type=int, default=1800)
+    parser.add_argument("--health-timeout-seconds", type=int, default=1200)
     parser.add_argument("--remote-port", type=int, default=8000)
     parser.add_argument(
         "--payload-json",
@@ -229,7 +230,10 @@ def main():
             local_port,
             args.remote_port,
         )
-        wait_for_health(f"http://127.0.0.1:{local_port}/health", 600)
+        wait_for_health(
+            f"http://127.0.0.1:{local_port}/health",
+            args.health_timeout_seconds,
+        )
         result = predict_once(f"http://127.0.0.1:{local_port}/predict", payload)
         print(json.dumps(
             {
