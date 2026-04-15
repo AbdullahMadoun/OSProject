@@ -7,6 +7,11 @@ import sys
 
 import numpy as np
 
+try:
+    from .tabpfn_backend import prepare_prediction_backend
+except ImportError:
+    from tabpfn_backend import prepare_prediction_backend
+
 MODEL_PATH = "ml/tabpfn_models.pkl"
 
 
@@ -26,6 +31,15 @@ def main():
             bundle = pickle.load(handle)
     except FileNotFoundError:
         print(json.dumps({"error": f"model not found: {MODEL_PATH}"}))
+        sys.exit(1)
+    except Exception as exc:
+        print(json.dumps({"error": f"model load failed: {exc}"}))
+        sys.exit(1)
+
+    try:
+        prepare_prediction_backend(bundle)
+    except Exception as exc:
+        print(json.dumps({"error": f"tabpfn auth failed: {exc}"}))
         sys.exit(1)
 
     features = bundle["features"]

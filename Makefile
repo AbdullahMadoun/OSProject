@@ -97,10 +97,10 @@ test-c: $(TEST_BINS)
 	./$(TEST_BIN_DIR)/test_metrics
 
 test: all test-c
-	pytest -q ml/tests
+	python3 -m pytest -q ml/tests
 
 ml-tests:
-	pytest -q ml/tests
+	python3 -m pytest -q ml/tests
 
 clean:
 	rm -rf $(BIN) $(TEST_BIN_DIR) ml/__pycache__ ml/tests/__pycache__

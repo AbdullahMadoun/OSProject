@@ -9,10 +9,17 @@ import socket
 
 import numpy as np
 
+try:
+    from .tabpfn_backend import prepare_prediction_backend
+except ImportError:
+    from tabpfn_backend import prepare_prediction_backend
+
 
 def load_bundle(path):
     with open(path, "rb") as handle:
-        return pickle.load(handle)
+        bundle = pickle.load(handle)
+    prepare_prediction_backend(bundle)
+    return bundle
 
 
 def predict(bundle, request_dict):
