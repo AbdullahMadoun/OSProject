@@ -8,6 +8,10 @@ LDFLAGS := -lm
 
 BIN := cpu_scheduler
 TEST_BIN_DIR := build/tests
+FUZZ_BIN_DIR := build/fuzz
+FUZZ_OUT_DIR := build/afl
+FUZZ_SCRIPT := scripts/fuzz/run_baseline.sh
+FUZZ_CC := afl-clang-fast
 
 CORE_SRCS := \
 	src/process.c \
@@ -34,6 +38,9 @@ TEST_BINS := \
 	$(TEST_BIN_DIR)/test_metrics
 
 .PHONY: all clean test test-c ml-tests
+.PHONY: fuzz-build fuzz-build-asan fuzz-build-fast
+.PHONY: fuzz-input fuzz-queue fuzz-cmin fuzz-tmin
+.PHONY: fuzz-baseline-input fuzz-baseline-queue
 
 all: $(BIN)
 
@@ -102,5 +109,56 @@ test: all test-c
 ml-tests:
 	python3 -m pytest -q ml/tests
 
+$(FUZZ_BIN_DIR):
+	mkdir -p $(FUZZ_BIN_DIR)
+
+fuzz-build-asan: | $(FUZZ_BIN_DIR)
+	AFL_USE_ASAN=1 AFL_USE_UBSAN=1 AFL_LLVM_LAF_ALL=1 \
+	$(FUZZ_CC) $(CFLAGS) -o $(FUZZ_BIN_DIR)/fuzz_input \
+		fuzz/fuzz_input.c src/input.c src/process.c $(LDFLAGS)
+	AFL_USE_ASAN=1 AFL_USE_UBSAN=1 AFL_LLVM_LAF_ALL=1 \
+	$(FUZZ_CC) $(CFLAGS) -o $(FUZZ_BIN_DIR)/fuzz_queue \
+		fuzz/fuzz_queue.c src/process.c src/queue.c $(LDFLAGS)
+
+fuzz-build-fast: | $(FUZZ_BIN_DIR)
+	AFL_LLVM_LAF_ALL=1 \
+	$(FUZZ_CC) $(CFLAGS) -o $(FUZZ_BIN_DIR)/fuzz_input \
+		fuzz/fuzz_input.c src/input.c src/process.c $(LDFLAGS)
+	AFL_LLVM_LAF_ALL=1 \
+	$(FUZZ_CC) $(CFLAGS) -o $(FUZZ_BIN_DIR)/fuzz_queue \
+		fuzz/fuzz_queue.c src/process.c src/queue.c $(LDFLAGS)
+
+fuzz-build: fuzz-build-asan
+
+fuzz-input: fuzz-build-asan
+	afl-fuzz -m none -i fuzz/corpus/input -o $(FUZZ_OUT_DIR)/input \
+		-x fuzz/dictionaries/workload.dict -- $(FUZZ_BIN_DIR)/fuzz_input
+
+fuzz-queue: fuzz-build-asan
+	afl-fuzz -m none -i fuzz/corpus/queue -o $(FUZZ_OUT_DIR)/queue \
+		-- $(FUZZ_BIN_DIR)/fuzz_queue
+
+fuzz-cmin: fuzz-build-fast
+	afl-cmin -i $(FUZZ_OUT_DIR)/input/default/queue \
+		-o $(FUZZ_OUT_DIR)/input-cmin -- $(FUZZ_BIN_DIR)/fuzz_input
+
+fuzz-tmin: fuzz-build-asan
+	@if [ -z "$(IN)" ]; then \
+		echo "usage: make fuzz-tmin IN=path/to/crash OUT=path/to/minimized"; \
+		exit 1; \
+	fi
+	@if [ -z "$(OUT)" ]; then \
+		echo "usage: make fuzz-tmin IN=path/to/crash OUT=path/to/minimized"; \
+		exit 1; \
+	fi
+	afl-tmin -i "$(IN)" -o "$(OUT)" -- $(FUZZ_BIN_DIR)/fuzz_input
+
+fuzz-baseline-input: fuzz-build-asan
+	bash $(FUZZ_SCRIPT) --target input --duration 600
+
+fuzz-baseline-queue: fuzz-build-asan
+	bash $(FUZZ_SCRIPT) --target queue --duration 600
+
 clean:
-	rm -rf $(BIN) $(TEST_BIN_DIR) ml/__pycache__ ml/tests/__pycache__
+	rm -rf $(BIN) $(TEST_BIN_DIR) $(FUZZ_BIN_DIR) ml/__pycache__ \
+		ml/tests/__pycache__

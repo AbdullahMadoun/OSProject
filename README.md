@@ -799,6 +799,26 @@ Rule of thumb:
 These commands fit the current harnesses. They are Linux-oriented because the
 project itself targets Linux.
 
+Reproducible `Makefile` shortcuts:
+
+```sh
+make fuzz-build-asan
+make fuzz-input
+make fuzz-queue
+make fuzz-cmin
+make fuzz-tmin IN=crash.bin OUT=min.bin
+make fuzz-baseline-input
+make fuzz-baseline-queue
+```
+
+Baseline automation script (prints `execs/sec`, `paths_total`, and
+`unique_crashes` from `fuzzer_stats`):
+
+```sh
+bash scripts/fuzz/run_baseline.sh --target input --duration 1800 --mode asan
+bash scripts/fuzz/run_baseline.sh --target queue --duration 1800 --mode fast
+```
+
 Build parser and queue fuzzers:
 
 ```sh
