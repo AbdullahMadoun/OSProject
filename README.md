@@ -14,11 +14,9 @@ still has material gaps:
   dictionary, and `make fuzz-*` workflow), but campaign evidence is still
   missing: no published baseline run metrics, no minimized crash triage set, no
   regression replay suite, and no sustained multi-hour coverage report.
-- The ML layer is not yet a fully validated official TabPFN client workflow.
-  The current committed model artifact was produced for smoke testing, not as a
+- The ML layer is not yet fully validated for cloud-scale TabPFN usage. The
+  current committed model artifact was produced for smoke testing, not as a
   high-confidence trained predictive layer.
-- The official `tabpfn-client` access-token path was installed, but it has not
-  been fully validated end-to-end here against a live authenticated session.
 - The current dataset and model artifacts are tiny smoke-test outputs, not a
   serious training corpus or a trustworthy benchmark.
 - The project was implemented against the provided directive, but it has not
@@ -51,22 +49,17 @@ make test-c
 python3 -m pip install -r requirements.txt
 ```
 
-## TabPFN Client Setup
+## TabPFN Setup
 
-For the official `tabpfn-client` path, initialize and cache a token once:
-
-```sh
-python3 ml/init_tabpfn_client.py
-```
-
-Then train with the official client explicitly:
+Train with local TabPFN:
 
 ```sh
-python3 ml/train.py --backend tabpfn-client
+python3 ml/train.py --backend tabpfn-local
 ```
 
-If no token is available, `python3 ml/train.py --backend auto` will fall back
-to a dummy regressor for smoke testing only.
+For headless/cloud runs, set `TABPFN_TOKEN` before training/inference. If
+local TabPFN cannot be initialized, `python3 ml/train.py --backend auto` falls
+back to a dummy regressor for smoke testing only.
 
 ## Python Tests
 

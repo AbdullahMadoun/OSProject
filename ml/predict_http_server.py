@@ -22,15 +22,14 @@ except ImportError:
     from train import train
 
 
-def load_or_train_bundle(model_path, data_path, backend, interactive_auth):
+def load_or_train_bundle(model_path, data_path, backend):
     model_file = Path(model_path)
     if not model_file.exists():
-        train(data_path, model_path, backend=backend,
-              interactive_auth=interactive_auth)
+        train(data_path, model_path, backend=backend)
 
     with model_file.open("rb") as handle:
         bundle = pickle.load(handle)
-    prepare_prediction_backend(bundle, interactive_auth=interactive_auth)
+    prepare_prediction_backend(bundle)
     return bundle
 
 
@@ -64,6 +63,7 @@ class PredictHandler(BaseHTTPRequestHandler):
                     "status": "ok",
                     "backend": self.bundle.get("backend"),
                     "auth_source": self.bundle.get("auth_source"),
+                    "device": self.bundle.get("device"),
                 }
             )
             return
@@ -104,10 +104,9 @@ def main():
     parser.add_argument("--data", default="ml/runs.csv")
     parser.add_argument(
         "--backend",
-        choices=["auto", "tabpfn-local", "tabpfn-client", "dummy"],
+        choices=["auto", "tabpfn-local", "dummy"],
         default="auto",
     )
-    parser.add_argument("--interactive-auth", action="store_true")
     parser.add_argument("--shutdown-after-predict", action="store_true")
     args = parser.parse_args()
 
@@ -115,7 +114,6 @@ def main():
         args.model,
         args.data,
         args.backend,
-        args.interactive_auth,
     )
     PredictHandler.shutdown_after_predict = args.shutdown_after_predict
     server = ThreadingHTTPServer((args.host, args.port), PredictHandler)

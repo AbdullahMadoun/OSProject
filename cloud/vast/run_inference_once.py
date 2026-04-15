@@ -190,13 +190,24 @@ def main():
     parser.add_argument("--remote-port", type=int, default=8000)
     parser.add_argument(
         "--payload-json",
-        required=True,
+        default=None,
         help="JSON object sent to /predict",
+    )
+    parser.add_argument(
+        "--payload-file",
+        default=None,
+        help="Path to a JSON file sent to /predict",
     )
     args = parser.parse_args()
 
     api_key = read_api_key(args.api_key)
-    payload = json.loads(args.payload_json)
+    if args.payload_file:
+        with open(args.payload_file, "r", encoding="utf-8") as handle:
+            payload = json.load(handle)
+    elif args.payload_json:
+        payload = json.loads(args.payload_json)
+    else:
+        fail("Pass either --payload-json or --payload-file.")
     instance_id = None
     tunnel = None
 

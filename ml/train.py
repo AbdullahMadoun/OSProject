@@ -31,7 +31,7 @@ TARGETS = [
 ]
 
 
-def train(data_path, out_path, backend="auto", interactive_auth=False):
+def train(data_path, out_path, backend="auto"):
     df = pd.read_csv(data_path)
     df = df.dropna(subset=FEATURES + TARGETS)
     x = df[FEATURES].values.astype(float)
@@ -40,10 +40,7 @@ def train(data_path, out_path, backend="auto", interactive_auth=False):
     bundle_meta = None
     for target in TARGETS:
         y = df[target].values.astype(float)
-        model, metadata = make_regressor(
-            backend=backend,
-            interactive_auth=interactive_auth,
-        )
+        model, metadata = make_regressor(backend=backend)
         model.fit(x, y)
         models[target] = model
         if bundle_meta is None:
@@ -57,6 +54,7 @@ def train(data_path, out_path, backend="auto", interactive_auth=False):
                 "targets": TARGETS,
                 "backend": bundle_meta["backend"],
                 "auth_source": bundle_meta["auth_source"],
+                "device": bundle_meta.get("device"),
                 "fallback_reason": bundle_meta.get("fallback_reason"),
             },
             handle,
@@ -71,13 +69,8 @@ if __name__ == "__main__":
     parser.add_argument("--out", default="ml/tabpfn_models.pkl")
     parser.add_argument(
         "--backend",
-        choices=["auto", "tabpfn-local", "tabpfn-client", "dummy"],
+        choices=["auto", "tabpfn-local", "dummy"],
         default="auto",
     )
-    parser.add_argument(
-        "--interactive-auth",
-        action="store_true",
-        help="allow the official tabpfn-client login flow if no token is set",
-    )
     args = parser.parse_args()
-    train(args.data, args.out, args.backend, args.interactive_auth)
+    train(args.data, args.out, args.backend)

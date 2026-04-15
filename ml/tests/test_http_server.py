@@ -38,8 +38,7 @@ def test_http_server_predict_and_exit(tmp_path):
         encoding="utf-8",
     )
 
-    train(str(data_path), str(model_path), backend="dummy",
-          interactive_auth=False)
+    train(str(data_path), str(model_path), backend="dummy")
 
     port = _free_port()
     proc = subprocess.Popen(
