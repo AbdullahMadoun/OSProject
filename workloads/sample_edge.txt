@@ -1,0 +1,2 @@
+# Single process with idle gap before arrival
+1      5        3      0

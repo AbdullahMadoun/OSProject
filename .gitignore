@@ -1,0 +1,15 @@
+build/
+cpu_scheduler
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.o
+*.obj
+*.out
+*.exe
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.log
