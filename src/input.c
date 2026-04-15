@@ -108,12 +108,65 @@ int input_validate(const Process *procs, int n)
     return CS_OK;
 }
 
-int input_load_file(const char *filepath, Process *procs, int max_procs)
+static int parse_line(char *line, int line_no, Process *procs, int *count,
+                      int max_procs, const char *source)
 {
-    FILE *fp;
+    char *trimmed;
+    int pid;
+    int arrival;
+    int burst;
+    int priority;
+    char extra;
+
+    trimmed = skip_ws(line);
+    if (*trimmed == '\0' || *trimmed == '\n' || *trimmed == '#') {
+        return CS_OK;
+    }
+    if (*count >= max_procs) {
+        fprintf(stderr, "%s: too many processes\n", source);
+        return CS_ERR;
+    }
+
+    if (sscanf(trimmed, "%d %d %d %d %c", &pid, &arrival, &burst, &priority,
+               &extra) != 4) {
+        fprintf(stderr, "%s: parse error on line %d\n", source, line_no);
+        return CS_ERR;
+    }
+
+    process_init(&procs[*count], pid, arrival, burst, priority);
+    (*count)++;
+    return CS_OK;
+}
+
+static int parse_payload(FILE *fp, const char *source, Process *procs,
+                         int max_procs)
+{
     char line[MAX_LINE_LEN];
     int count = 0;
     int line_no = 0;
+
+    while (fgets(line, sizeof(line), fp) != NULL) {
+        line_no++;
+        if (parse_line(line, line_no, procs, &count, max_procs, source) !=
+            CS_OK) {
+            return CS_ERR;
+        }
+    }
+
+    if (count < 1) {
+        fprintf(stderr, "%s: no processes loaded\n", source);
+        return CS_ERR;
+    }
+    if (input_validate(procs, count) != CS_OK) {
+        return CS_ERR;
+    }
+    return count;
+}
+
+int input_load_file(const char *filepath, Process *procs, int max_procs)
+{
+    FILE *fp;
+    int count;
 
     if (filepath == NULL || procs == NULL || max_procs < 1) {
         fprintf(stderr, "input_load_file: invalid arguments\n");
@@ -126,41 +179,62 @@ int input_load_file(const char *filepath, Process *procs, int max_procs)
         return CS_ERR;
     }
 
-    while (fgets(line, sizeof(line), fp) != NULL) {
-        char *trimmed;
-        int pid;
-        int arrival;
-        int burst;
-        int priority;
-        char extra;
+    count = parse_payload(fp, "input_load_file", procs, max_procs);
+    fclose(fp);
+    return count;
+}
 
-        line_no++;
-        trimmed = skip_ws(line);
-        if (*trimmed == '\0' || *trimmed == '\n' || *trimmed == '#') {
-            continue;
-        }
-        if (count >= max_procs) {
-            fprintf(stderr, "input_load_file: too many processes\n");
-            fclose(fp);
-            return CS_ERR;
-        }
+int input_load_buffer(const char *data, size_t len, Process *procs,
+                      int max_procs)
+{
+    char line[MAX_LINE_LEN];
+    size_t i;
+    size_t line_len = 0;
+    int line_no = 0;
+    int count = 0;
 
-        if (sscanf(trimmed, "%d %d %d %d %c", &pid, &arrival, &burst,
-                   &priority, &extra) != 4) {
-            fprintf(stderr, "input_load_file: parse error on line %d\n",
-                    line_no);
-            fclose(fp);
-            return CS_ERR;
-        }
-
-        process_init(&procs[count], pid, arrival, burst, priority);
-        count++;
+    if (data == NULL || procs == NULL || max_procs < 1) {
+        fprintf(stderr, "input_load_buffer: invalid arguments\n");
+        return CS_ERR;
     }
 
-    fclose(fp);
+    for (i = 0; i < len; i++) {
+        unsigned char ch = (unsigned char)data[i];
+
+        if (ch == '\0') {
+            fprintf(stderr, "input_load_buffer: NUL byte on line %d\n",
+                    line_no + 1);
+            return CS_ERR;
+        }
+        if (line_len + 1 >= sizeof(line)) {
+            fprintf(stderr, "input_load_buffer: line %d too long\n",
+                    line_no + 1);
+            return CS_ERR;
+        }
+
+        line[line_len++] = (char)ch;
+        if (ch == '\n') {
+            line[line_len] = '\0';
+            line_no++;
+            if (parse_line(line, line_no, procs, &count, max_procs,
+                           "input_load_buffer") != CS_OK) {
+                return CS_ERR;
+            }
+            line_len = 0;
+        }
+    }
+
+    if (line_len > 0) {
+        line[line_len] = '\0';
+        line_no++;
+        if (parse_line(line, line_no, procs, &count, max_procs,
+                       "input_load_buffer") != CS_OK) {
+            return CS_ERR;
+        }
+    }
 
     if (count < 1) {
-        fprintf(stderr, "input_load_file: no processes loaded\n");
+        fprintf(stderr, "input_load_buffer: no processes loaded\n");
         return CS_ERR;
     }
     if (input_validate(procs, count) != CS_OK) {

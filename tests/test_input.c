@@ -1,6 +1,7 @@
 #include "minunit.h"
 #include "../include/input.h"
 #include <stdio.h>
+#include <string.h>
 
 #define TMPFILE "/tmp/cs_test_workload.txt"
 
@@ -90,6 +91,38 @@ static void suite_samples(void)
               input_load_sample("unknown", p, MAX_PROCESSES) == CS_ERR);
 }
 
+static void suite_buffer_valid(void)
+{
+    const char *payload =
+        "# header\n"
+        "1 0 5 2\n"
+        "2 1 3 1\n";
+    Process p[10];
+    int n = input_load_buffer(payload, strlen(payload), p, 10);
+
+    mu_assert_int_eq("buffer valid count", 2, n);
+    mu_assert_int_eq("buffer p1 pid", 1, p[0].pid);
+    mu_assert_int_eq("buffer p2 burst", 3, p[1].burst_time);
+}
+
+static void suite_buffer_rejects_nul(void)
+{
+    char payload[] = {'1', ' ', '0', ' ', '5', ' ', '0', '\0', '\n'};
+    Process p[10];
+    int n = input_load_buffer(payload, sizeof(payload), p, 10);
+
+    mu_assert("buffer rejects NUL", n == CS_ERR);
+}
+
+static void suite_buffer_rejects_extra_token(void)
+{
+    const char *payload = "1 0 5 0 x\n";
+    Process p[10];
+    int n = input_load_buffer(payload, strlen(payload), p, 10);
+
+    mu_assert("buffer rejects extra token", n == CS_ERR);
+}
+
 int main(void)
 {
     mu_suite(suite_valid);
@@ -98,5 +131,8 @@ int main(void)
     mu_suite(suite_reject_duplicate_pid);
     mu_suite(suite_comments_and_blanks);
     mu_suite(suite_samples);
+    mu_suite(suite_buffer_valid);
+    mu_suite(suite_buffer_rejects_nul);
+    mu_suite(suite_buffer_rejects_extra_token);
     mu_summary();
 }

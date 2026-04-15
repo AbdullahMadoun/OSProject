@@ -1,34 +1,19 @@
 #include "../include/input.h"
 #include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
 
 int main(void)
 {
-    char template[] = "/tmp/cs_fuzz_input_XXXXXX";
-    FILE *tmp;
-    int fd;
+    char buf[8192];
     int ch;
+    size_t len = 0;
     Process procs[MAX_PROCESSES];
 
-    fd = mkstemp(template);
-    if (fd < 0) {
-        return 1;
-    }
-
-    tmp = fdopen(fd, "w");
-    if (tmp == NULL) {
-        close(fd);
-        unlink(template);
-        return 1;
-    }
-
     while ((ch = getchar()) != EOF) {
-        fputc(ch, tmp);
+        if (len < sizeof(buf)) {
+            buf[len++] = (char)ch;
+        }
     }
-    fclose(tmp);
 
-    (void)input_load_file(template, procs, MAX_PROCESSES);
-    unlink(template);
+    (void)input_load_buffer(buf, len, procs, MAX_PROCESSES);
     return 0;
 }
