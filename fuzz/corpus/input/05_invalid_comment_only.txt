@@ -1,0 +1,2 @@
+# no processes here
+# still valid syntax, but invalid workload
