@@ -67,6 +67,17 @@ back to a dummy regressor for smoke testing only.
 pytest -q ml/tests
 ```
 
+## Python Visualization
+
+Generate an HTML dashboard from an exported scheduler CSV:
+
+```sh
+./cpu_scheduler -s basic -a all -e results.csv
+python3 ml/visualize_runs.py results.csv -o results.html
+```
+
+The report is self-contained HTML, so it can be opened directly in a browser.
+
 ## Run
 
 ```sh
