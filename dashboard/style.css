@@ -99,30 +99,39 @@ textarea {
   box-shadow: inset 0 0 10px rgba(0, 212, 255, 0.12), 0 0 18px rgba(0, 212, 255, 0.08);
 }
 
-.process-input {
+#processRows .process-input {
   width: 100%;
-  background: transparent;
-  border: 0;
-  border-bottom: 1px solid rgba(60, 73, 78, 0.72);
-  color: #e1e2eb;
-  padding: 0.25rem 0;
+  appearance: textfield;
+  -moz-appearance: textfield;
+  background-color: rgba(16, 19, 26, 0.92) !important;
+  border: 1px solid rgba(60, 73, 78, 0.85) !important;
+  border-radius: 0.5rem;
+  color: #e1e2eb !important;
+  padding: 0.75rem 0.85rem !important;
   font-family: "Space Grotesk", Inter, system-ui, sans-serif;
-  font-size: 14px;
-  line-height: 1.4;
-  transition: all 0.2s ease;
+  font-size: 1.4rem;
+  line-height: 1.1;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
-.process-input:focus {
+#processRows .process-input::-webkit-outer-spin-button,
+#processRows .process-input::-webkit-inner-spin-button {
+  margin: 0;
+}
+
+#processRows .process-input:focus {
   outline: none;
-  border-bottom-color: #00d4ff;
-  background: rgba(29, 32, 38, 0.58);
-  box-shadow: 0 8px 20px rgba(0, 212, 255, 0.06);
+  border-color: #00d4ff !important;
+  background-color: rgba(21, 26, 35, 0.98) !important;
+  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.16);
 }
 
-.process-input.invalid-input {
-  border-bottom-color: #ffb4ab;
-  background: rgba(147, 0, 10, 0.16);
-  color: #ffdad6;
+#processRows .process-input.invalid-input {
+  border-color: #ffb4ab !important;
+  background-color: rgba(147, 0, 10, 0.2) !important;
+  color: #ffdad6 !important;
+  box-shadow: 0 0 0 3px rgba(255, 180, 171, 0.16);
 }
 
 .run-disabled {
