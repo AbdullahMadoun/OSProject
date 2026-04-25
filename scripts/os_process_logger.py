@@ -381,8 +381,9 @@ def run_simulator(
 
     if dashboard_path is not None:
         _ensure_parent(dashboard_path)
+        visualizer = Path(__file__).with_name("visualize_runs.py")
         result = _run_command(
-            [sys.executable, "ml/visualize_runs.py", str(results_path),
+            [sys.executable, str(visualizer), str(results_path),
              "-o", str(dashboard_path)]
         )
         if result.returncode != 0:

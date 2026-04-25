@@ -29,7 +29,7 @@ int metrics_export_csv(const Process *procs, int n, const SimConfig *cfg,
                        const Metrics *m, SchedAlgo algo,
                        const char *filepath);
 
-/** Compute workload summary statistics used by export and prediction. */
+/** Compute workload summary statistics used by CSV export. */
 void metrics_workload_summary(const Process *procs, int n, double *avg_burst,
                               double *std_burst, double *avg_gap,
                               int *max_priority);

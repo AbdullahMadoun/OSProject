@@ -1,4 +1,5 @@
-from ml.visualize_runs import build_html_report, load_rows, summarize_by_algo
+from scripts.visualize_runs import build_html_report, load_rows
+from scripts.visualize_runs import summarize_by_algo
 
 
 def test_load_rows_parses_numeric_fields(tmp_path):

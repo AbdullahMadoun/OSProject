@@ -199,26 +199,3 @@ void viz_print_comparison(const Metrics metrics[ALGO_COUNT],
         printf("\n");
     }
 }
-
-void viz_print_prediction(const Metrics *predicted, const Metrics *actual,
-                          SchedAlgo algo)
-{
-    if (predicted == NULL || actual == NULL) {
-        return;
-    }
-
-    printf("\nPrediction vs actual (%s)\n", algo_name(algo));
-    printf("%-16s %12s %12s\n", "metric", "predicted", "actual");
-    printf("%-16s %12.2f %12.2f\n", "avg_waiting",
-           predicted->avg_waiting_time, actual->avg_waiting_time);
-    printf("%-16s %12.2f %12.2f\n", "avg_turnaround",
-           predicted->avg_turnaround_time, actual->avg_turnaround_time);
-    printf("%-16s %12.2f %12.2f\n", "avg_response",
-           predicted->avg_response_time, actual->avg_response_time);
-    printf("%-16s %12.2f %12.2f\n", "cpu_utilization",
-           predicted->cpu_utilization, actual->cpu_utilization);
-    printf("%-16s %12.2f %12.2f\n", "throughput",
-           predicted->throughput, actual->throughput);
-    printf("%-16s %12d %12d\n", "context_switches",
-           predicted->context_switches, actual->context_switches);
-}

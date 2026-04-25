@@ -14,3 +14,9 @@ __pycache__/
 .ruff_cache/
 *.log
 reports/os_process_logs/
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz

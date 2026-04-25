@@ -25,8 +25,4 @@ void viz_print_metrics(const Metrics *m, SchedAlgo algo);
 void viz_print_comparison(const Metrics metrics[ALGO_COUNT],
                           const SchedAlgo algos[ALGO_COUNT]);
 
-/** Print predicted versus actual metrics for one algorithm. */
-void viz_print_prediction(const Metrics *predicted, const Metrics *actual,
-                          SchedAlgo algo);
-
 #endif /* VISUALIZATION_H */

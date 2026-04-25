@@ -22,10 +22,6 @@
 #define ANSI_CYAN "\033[36m"
 #define ANSI_WHITE "\033[37m"
 
-#define ML_SOCKET_PATH "/tmp/cpu_scheduler_predict.sock"
-#define ML_MODEL_PATH "ml/tabpfn_models.pkl"
-#define ML_JSON_BUFSIZE 1024
-
 #define CS_OK 0
 #define CS_ERR -1
 

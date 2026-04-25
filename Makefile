@@ -37,7 +37,7 @@ TEST_BINS := \
 	$(TEST_BIN_DIR)/test_priority \
 	$(TEST_BIN_DIR)/test_metrics
 
-.PHONY: all clean test test-c ml-tests
+.PHONY: all clean test test-c py-tests
 .PHONY: fuzz-build fuzz-build-asan fuzz-build-fast
 .PHONY: fuzz-input fuzz-queue fuzz-cmin fuzz-tmin
 .PHONY: fuzz-baseline-input fuzz-baseline-queue
@@ -103,11 +103,10 @@ test-c: $(TEST_BINS)
 	./$(TEST_BIN_DIR)/test_priority
 	./$(TEST_BIN_DIR)/test_metrics
 
-test: all test-c
-	python3 -m pytest -q ml/tests
+test: all test-c py-tests
 
-ml-tests:
-	python3 -m pytest -q ml/tests
+py-tests:
+	python3 -m pytest -q tests_py
 
 $(FUZZ_BIN_DIR):
 	mkdir -p $(FUZZ_BIN_DIR)
@@ -160,5 +159,5 @@ fuzz-baseline-queue: fuzz-build-asan
 	bash $(FUZZ_SCRIPT) --target queue --duration 600
 
 clean:
-	rm -rf $(BIN) $(TEST_BIN_DIR) $(FUZZ_BIN_DIR) ml/__pycache__ \
-		ml/tests/__pycache__
+	rm -rf $(BIN) $(TEST_BIN_DIR) $(FUZZ_BIN_DIR) \
+		scripts/__pycache__ tests_py/__pycache__

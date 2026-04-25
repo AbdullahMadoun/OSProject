@@ -1,17 +1,46 @@
 # CPU Scheduling Simulator
 
-This repository contains a C-based CPU scheduling simulator for an Operating
-Systems project. It loads a workload, runs one scheduler or all supported
-schedulers, prints a Gantt chart and metrics, and can export results to CSV for
-dashboard visualization.
+This repository contains a Phase 2 Operating Systems project: a working CPU
+scheduling simulator written in C, with tests, sample workloads, CSV export,
+browser visualization, fuzzing scaffolding, and a detailed progress report.
 
-The active project scope is scheduler simulation. Legacy ML-related files may
-still exist in the repository, but they are not required for grading the core OS
-simulator.
+The project scope is now scheduler simulation only. The previous experimental
+prediction path has been fully removed from the source tree, build file,
+command-line interface, dependencies, and active documentation.
 
-## Grader Quick Start
+## Phase 2 Status
 
-From the repository root:
+The implementation is approximately 70% complete for the final project scope.
+The main scheduler modules are implemented and testable. Remaining work is
+validation depth, polish, final screenshots/PDF packaging, and stronger fuzzing
+and memory-safety evidence.
+
+Implemented:
+
+- FCFS, non-preemptive SJF, Round Robin, and non-preemptive priority scheduling
+- workload parser for built-in samples and custom files
+- deterministic tie-breaking by arrival time and PID where applicable
+- Gantt timeline generation
+- per-process waiting, turnaround, and response metrics
+- aggregate utilization, throughput, context-switch, and total-time metrics
+- all-algorithm comparison mode
+- CSV export
+- browser dashboard in `dashboard/`
+- CSV-to-HTML dashboard generator in `scripts/visualize_runs.py`
+- process logger in `scripts/os_process_logger.py`
+- C unit tests for parser, process model, queues, schedulers, and metrics
+- AFL++ fuzzing harnesses and starter corpora
+
+Remaining:
+
+- document final PDF build output from `reports/phase2_report.tex`
+- add final screenshot assets or captured terminal images if required
+- run and archive Valgrind or sanitizer memory checks
+- run and archive longer AFL++ fuzz campaigns
+- standardize context-switch overhead semantics across all algorithms
+- add more edge-case tests near `MAX_PROCESSES` and CSV comparison export
+
+## Quick Start
 
 ```sh
 make clean
@@ -20,99 +49,40 @@ make test-c
 ./cpu_scheduler -s basic -a all
 ./cpu_scheduler -f workloads/sample_rr.txt -a rr -q 4
 ./cpu_scheduler -s basic -a all -e results.csv
-python3 ml/visualize_runs.py results.csv -o results.html
+python3 scripts/visualize_runs.py results.csv -o results.html
 ```
 
-To view the browser dashboard:
+Open the browser dashboard directly:
 
 ```sh
 open dashboard/index.html
 ```
 
-On Linux, use `xdg-open dashboard/index.html` instead of `open`.
-
-## What To Grade
-
-Primary grading targets:
-
-- C source under `src/` and headers under `include/`
-- scheduler implementations in `src/schedulers/`
-- sample workloads under `workloads/`
-- C unit tests under `tests/`
-- `Makefile`
-- optional browser dashboard under `dashboard/`
-- optional CSV dashboard generator in `ml/visualize_runs.py`
-- optional Phase 2 report source in `reports/phase2_report.tex`
-
-Generated or local-only outputs:
-
-- `cpu_scheduler` and `build/` are build outputs
-- `results.csv`, `results.html`, `ml/runs.csv`, and `ml/runs_dashboard.html`
-  are example/generated dashboard outputs
-- `reports/os_process_logs/` is intentionally ignored because it can contain
-  personal process activity from the local machine
-
-## Implemented Features
-
-- First-Come, First-Served (FCFS)
-- non-preemptive Shortest Job First (SJF)
-- Round Robin with configurable quantum
-- non-preemptive priority scheduling
-- built-in sample workloads and custom workload files
-- deterministic process tie-breaking
-- Gantt timeline generation
-- per-process waiting, turnaround, and response time metrics
-- aggregate waiting, turnaround, response, utilization, throughput, total time,
-  and context-switch metrics
-- all-algorithm comparison mode
-- CSV export for metrics
-- C unit tests for parser, process model, queues, schedulers, and metrics
-- AFL++ fuzzing harnesses and seed corpora for parser and queue code
-- browser dashboard with editable workloads and client-side visualizations
-- optional OS process logger that converts observed local CPU activity into a
-  simulator workload
+On Linux, use `xdg-open dashboard/index.html`.
 
 ## Build Requirements
 
-Required for the C simulator:
+Required:
 
-- C compiler with C11 support, tested with `gcc`
+- C compiler with C11 support
 - `make`
 
-Optional tooling:
+Optional:
 
-- Python 3 for CSV dashboard generation and Python tests
-- dependencies from `requirements.txt`
-- AFL++ for fuzzing targets
+- Python 3 for helper scripts and Python tests
+- `pytest` and `psutil` from `requirements.txt`
+- AFL++ for fuzzing
 - a TeX distribution for compiling `reports/phase2_report.tex`
 
-Install optional Python dependencies with:
+Install optional Python dependencies:
 
 ```sh
 python3 -m pip install -r requirements.txt
 ```
 
-## Build
-
-```sh
-make
-```
-
-The build creates:
-
-```text
-./cpu_scheduler
-```
-
-Clean generated C build artifacts:
-
-```sh
-make clean
-```
-
 ## Run The Simulator
 
-Run one built-in sample with all algorithms:
+Run all algorithms on the built-in basic workload:
 
 ```sh
 ./cpu_scheduler -s basic -a all
@@ -148,10 +118,6 @@ Command-line options:
 -h            Show help
 ```
 
-The `-p` flag may appear in help output because older ML prediction code still
-exists in the repository. It is not part of the required scheduler simulation
-workflow.
-
 ## Workload Format
 
 Each process line has four integer fields:
@@ -179,12 +145,7 @@ Example:
 4 6 3 4
 ```
 
-Sample workloads:
-
-- `workloads/sample_basic.txt`
-- `workloads/sample_rr.txt`
-- `workloads/sample_priority.txt`
-- `workloads/sample_edge.txt`
+Sample workloads are in `workloads/`.
 
 ## Scheduling Rules
 
@@ -198,24 +159,24 @@ SJF:
 
 - non-preemptive
 - chooses the arrived process with the shortest burst
-- tie-breaks by arrival time, then PID
+- tie-breaks by burst, arrival time, and PID
 
 Round Robin:
 
 - uses a FIFO ready queue
 - runs a process for at most `quantum` ticks
-- enqueues new arrivals before requeueing an unfinished process
-- counts a context switch when the running PID changes
+- enqueues newly arrived processes before requeueing an unfinished process
+- counts a context switch when execution moves between different PIDs
 
 Priority:
 
 - non-preemptive
 - lower priority number runs first
-- tie-breaks by arrival time, then PID
+- tie-breaks by priority, arrival time, and PID
 
 ## Metrics
 
-For each process:
+Per-process formulas:
 
 ```text
 turnaround = completion - arrival
@@ -223,7 +184,7 @@ waiting    = turnaround - burst
 response   = first_start - arrival
 ```
 
-Aggregate metrics include:
+Aggregate metrics:
 
 - average waiting time
 - average turnaround time
@@ -236,43 +197,27 @@ Aggregate metrics include:
 
 ## Tests
 
-Run the C test suite:
+Run the C suite:
 
 ```sh
 make test-c
 ```
 
-Current local result:
-
-```text
-123/123 C assertions passed
-```
-
-The C tests cover:
-
-- process initialization and reset
-- FIFO queue and min-heap ordering
-- workload parsing and validation
-- FCFS, SJF, Round Robin, and priority scheduler behavior
-- metric formulas and idle-time utilization
-
-Optional Python dashboard tests require Python dependencies:
+Run all available tests:
 
 ```sh
-python3 -m pip install -r requirements.txt
-python3 -m pytest -q ml/tests/test_visualize_runs.py
+make test
+```
+
+Python helper tests only:
+
+```sh
+python3 -m pytest -q tests_py
 ```
 
 ## Browser Dashboard
 
-The browser dashboard is in `dashboard/` and requires no server, npm install, or
-build step:
-
-```sh
-open dashboard/index.html
-```
-
-It provides:
+The browser dashboard in `dashboard/` is a no-build static app. It provides:
 
 - editable process table
 - sample workload selector
@@ -284,8 +229,8 @@ It provides:
 - per-process metrics table
 - all-algorithm comparison view
 
-The dashboard reimplements the scheduler rules in JavaScript so it can run
-entirely from `file://`.
+The dashboard reimplements the scheduler rules in JavaScript so it can run from
+`file://`.
 
 ## CSV Dashboard
 
@@ -298,7 +243,7 @@ Generate scheduler metrics:
 Generate a self-contained HTML dashboard:
 
 ```sh
-python3 ml/visualize_runs.py results.csv -o results.html
+python3 scripts/visualize_runs.py results.csv -o results.html
 ```
 
 Open `results.html` in a browser.
@@ -327,22 +272,10 @@ claim to reproduce the real operating-system scheduler.
 
 Fuzzing requires AFL++.
 
-Build fuzz targets:
-
 ```sh
 make fuzz-build
-```
-
-Run parser and queue fuzzers:
-
-```sh
 make fuzz-input
 make fuzz-queue
-```
-
-Run timed baseline helper scripts:
-
-```sh
 make fuzz-baseline-input
 make fuzz-baseline-queue
 ```
@@ -351,7 +284,7 @@ Current fuzzing status:
 
 - parser and queue harnesses exist
 - seed corpora and a workload dictionary exist
-- long campaign reports and triaged crash artifacts are not committed
+- long campaign reports and triaged crash artifacts are not committed yet
 
 ## Project Layout
 
@@ -360,33 +293,24 @@ include/              Public C headers
 src/                  C simulator implementation
 src/schedulers/       FCFS, SJF, RR, and priority schedulers
 tests/                C unit tests
+tests_py/             Python tests for helper scripts and CSV export
 workloads/            Sample workload files
 dashboard/            Browser dashboard
-ml/visualize_runs.py  CSV-to-HTML dashboard generator
-scripts/              Helper scripts, including OS process logger
+scripts/              Helper scripts and CSV dashboard generator
 fuzz/                 AFL++ fuzz harnesses, dictionaries, and corpora
-reports/              Report source and generated report-related files
+reports/              Phase report source
+results.csv           Example CSV export
+results.html          Example generated HTML dashboard
 ```
-
-## Known Limitations
-
-- C tests cover the main behavior, but not every possible edge case.
-- SJF and priority currently ignore scheduler config such as context-switch
-  overhead.
-- FCFS can add context-switch overhead idle entries, but does not currently
-  increment `context_switches`.
-- Fuzzing harnesses are present, but long campaign evidence is not included.
-- Memory-leak proof with Valgrind is not documented in this repository.
-- Some legacy ML files remain, but they are outside the active grading scope.
 
 ## Suggested Grading Flow
 
-1. Read this README and inspect the workload format.
+1. Read the workload format and scheduling rules above.
 2. Run `make clean && make`.
 3. Run `make test-c`.
 4. Run `./cpu_scheduler -s basic -a all`.
 5. Run `./cpu_scheduler -f workloads/sample_rr.txt -a rr -q 4`.
 6. Run `./cpu_scheduler -s basic -a all -e results.csv`.
-7. Generate `results.html` with `ml/visualize_runs.py` if Python dependencies
-   are available.
+7. Run `python3 scripts/visualize_runs.py results.csv -o results.html`.
 8. Open `dashboard/index.html` to inspect the interactive visualization.
+9. Compile `reports/phase2_report.tex` to PDF for the Phase 2 report.
