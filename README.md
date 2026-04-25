@@ -1,40 +1,61 @@
 # CPU Scheduler
 
-## Critical Status
+CPU scheduling simulator for FCFS, non-preemptive SJF, Round Robin, and
+non-preemptive priority scheduling. The core implementation is written in C and
+includes workload parsing, Gantt timeline generation, metrics, terminal output,
+comparison mode, and CSV export.
 
-This repository is not finished enough to treat as "guaranteed correct" or
-submission-ready. The current state is useful, tested, and pushable, but it
-still has material gaps:
+The project scope is now scheduler simulation only. The earlier ML prediction
+idea has been removed from the active project plan.
 
-- The passing test suite only proves the executed cases passed. It does not
-  prove the scheduler is impossible to break on unseen inputs.
-- The zero-leak requirement is still unproven because `valgrind` was not
-  available in the WSL environment used for verification.
-- Fuzzing scaffolding is in place (`fuzz/*`, in-memory parser target, corpus,
-  dictionary, and `make fuzz-*` workflow), but campaign evidence is still
-  missing: no published baseline run metrics, no minimized crash triage set, no
-  regression replay suite, and no sustained multi-hour coverage report.
-- The ML layer is not yet fully validated for cloud-scale TabPFN usage. The
-  current committed model artifact was produced for smoke testing, not as a
-  high-confidence trained predictive layer.
-- The current dataset and model artifacts are tiny smoke-test outputs, not a
-  serious training corpus or a trustworthy benchmark.
-- The project was implemented against the provided directive, but it has not
-  been cross-audited line-by-line against the original course PDF in this repo.
-- Visualization was functionally exercised, but not deeply validated across
-  terminal types or large workloads.
+## Latest Features
 
-If this is going to be submitted or presented as final, those gaps should be
-closed first.
+- C simulator for FCFS, SJF, Round Robin, and priority scheduling.
+- Built-in sample workloads plus custom workload files using
+  `pid arrival burst priority`.
+- Configurable Round Robin quantum with deterministic FIFO ready-queue
+  behavior.
+- Gantt chart output, per-process timing tables, aggregate metrics, and
+  all-algorithm comparison tables.
+- CSV export for scheduler metrics.
+- Browser dashboard in `dashboard/` with editable workloads, client-side
+  scheduling, Gantt charts, metrics cards, and algorithm comparison.
+- Optional Python CSV dashboard generator for exported scheduler results.
+- Optional process logger that samples local macOS/Windows processes and
+  converts observed CPU activity into simulator workloads.
+- C unit tests for the main modules and algorithms.
+- AFL++ fuzzing harnesses and seed corpora for parser and queue testing.
+- Phase 2 report source in `reports/phase2_report.tex`.
 
-CPU scheduling simulator for FCFS, SJF, Round Robin, and non-preemptive
-priority scheduling, with CSV export and an optional TabPFN-based prediction
-layer.
+## Current Status
+
+The Phase 2 core implementation is working and locally tested. The C test suite
+currently passes 123/123 assertions with `make test-c`.
+
+Remaining work before final submission:
+
+- Remove or isolate legacy ML prediction files and command-line references.
+- Standardize context-switch overhead/count behavior across all algorithms.
+- Add more edge-case tests for context-switch overhead, large workloads, and CSV
+  comparison export.
+- Run and document memory checks with Valgrind or sanitizers.
+- Run and document longer AFL++ fuzzing campaigns.
+- Compile the LaTeX report to PDF on a machine with a TeX distribution.
 
 ## Build
 
 ```sh
 make
+```
+
+## Run
+
+```sh
+./cpu_scheduler -s basic -a fcfs
+./cpu_scheduler -s basic -a all
+./cpu_scheduler -f workloads/sample_priority.txt -a priority
+./cpu_scheduler -f workloads/sample_rr.txt -a rr -q 4
+./cpu_scheduler -s basic -a all -e results.csv
 ```
 
 ## C Tests
@@ -43,33 +64,28 @@ make
 make test-c
 ```
 
-## Python Setup
+## Browser Dashboard
+
+Open the interactive dashboard directly in a browser:
+
+```sh
+open dashboard/index.html
+```
+
+The dashboard runs fully in the browser. It reimplements the scheduling
+algorithms in JavaScript, supports editable workloads, validates process input,
+renders Gantt charts, computes metrics, and compares all algorithms.
+
+## Optional Python Tools
+
+Install Python dependencies when using the CSV dashboard generator or process
+logger:
 
 ```sh
 python3 -m pip install -r requirements.txt
 ```
 
-## TabPFN Setup
-
-Train with local TabPFN:
-
-```sh
-python3 ml/train.py --backend tabpfn-local
-```
-
-For headless/cloud runs, set `TABPFN_TOKEN` before training/inference. If
-local TabPFN cannot be initialized, `python3 ml/train.py --backend auto` falls
-back to a dummy regressor for smoke testing only.
-
-## Python Tests
-
-```sh
-pytest -q ml/tests
-```
-
-## Python Visualization
-
-Generate an HTML dashboard from an exported scheduler CSV:
+Generate a self-contained HTML dashboard from an exported scheduler CSV:
 
 ```sh
 ./cpu_scheduler -s basic -a all -e results.csv
@@ -78,11 +94,44 @@ python3 ml/visualize_runs.py results.csv -o results.html
 
 The report is self-contained HTML, so it can be opened directly in a browser.
 
-## Run
+## Personal OS Process Logger
+
+The repo includes a cross-platform process sampler for macOS and Windows:
 
 ```sh
-./cpu_scheduler -s basic -a all
-./cpu_scheduler -f workloads/sample_rr.txt -a rr -q 4
+python3 scripts/os_process_logger.py --duration 60 --interval 1 --run-simulator
+```
+
+It samples local process CPU time with `psutil`, writes a raw CSV log, converts
+active processes into the simulator workload format, runs all scheduling
+algorithms, and generates a dashboard from the results. By default it does not
+record command-line arguments, only process names and resource counters.
+
+Useful options:
+
+```sh
+python3 scripts/os_process_logger.py --duration 120 --anonymous
+python3 scripts/os_process_logger.py --duration 60 --run-simulator --quantum 4
+python3 scripts/os_process_logger.py --duration 60 --binary ./cpu_scheduler.exe
+```
+
+This is an approximation of your machine's workload, not a replacement for the
+real macOS or Windows scheduler. It answers: "Given the CPU bursts observed
+during this logging window, which educational scheduling algorithm scores best
+under this simulator's metrics?"
+
+## Phase 2 Report
+
+The Phase 2 progress report source is available at:
+
+```text
+reports/phase2_report.tex
+```
+
+Compile it with a local TeX distribution, for example:
+
+```sh
+latexmk -pdf reports/phase2_report.tex
 ```
 
 ## Fuzzing
@@ -258,7 +307,7 @@ What is low-yield here:
 
 - Fuzzing `src/main.c` as a whole CLI.
 - Fuzzing visualization output.
-- Fuzzing the ML socket path as part of the hot loop.
+- Fuzzing legacy prediction paths as part of the hot loop.
 
 Those paths add startup cost, side effects, and non-essential complexity.
 

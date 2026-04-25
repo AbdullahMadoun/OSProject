@@ -1,0 +1,324 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning}
+\usepackage[hidelinks]{hyperref}
+
+\definecolor{heading}{HTML}{1F4E79}
+\definecolor{lightgray}{HTML}{F5F7FA}
+\definecolor{codeborder}{HTML}{B8C2CC}
+
+\lstdefinestyle{terminal}{
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{lightgray},
+  frame=single,
+  rulecolor=\color{codeborder},
+  breaklines=true,
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false
+}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.55em}
+\renewcommand{\arraystretch}{1.15}
+
+\title{\textbf{Phase 2 Implementation and Progress Report}\\
+CPU Scheduling Simulator}
+\author{Operating Systems Project}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Brief Project Recap}
+
+The project is a command-line CPU scheduling simulator written in C. It
+accepts a workload of processes, executes one scheduling algorithm or compares
+all supported algorithms, builds a Gantt timeline, and reports standard
+scheduling metrics. The simulator is intended to help compare scheduling
+behavior using FCFS, non-preemptive SJF, Round Robin, and non-preemptive
+priority scheduling.
+
+The earlier machine-learning prediction idea has been removed from the Phase 2
+scope. The current report therefore focuses only on the core operating-system
+simulation: workload parsing, scheduler execution, timeline generation,
+metrics, visualization, CSV export, and tests.
+
+\section{Implemented So Far}
+
+The core simulator is approximately 65--70\% complete for the current
+non-ML project scope. The main scheduling functionality is working, while final
+submission polish, cleanup, and broader validation still remain.
+
+\begin{longtable}{p{0.29\linewidth}p{0.16\linewidth}p{0.45\linewidth}}
+\toprule
+\textbf{Component} & \textbf{Status} & \textbf{Progress} \\
+\midrule
+Process model & Complete & Process data includes PID, arrival time, burst
+time, priority, runtime state, start time, completion time, waiting time,
+turnaround time, and response time. \\
+Input loader & Complete & Reads built-in samples and workload files using the
+format \texttt{pid arrival burst priority}. Invalid burst values, duplicate
+PIDs, extra tokens, and malformed input are rejected. \\
+Simulation engine & Complete & Resets process state, dispatches algorithms,
+records Gantt entries, merges adjacent timeline entries, and computes total
+and idle time. \\
+FCFS scheduler & Complete & Runs processes by arrival time with PID tie
+breaking and supports initial idle time. \\
+SJF scheduler & Complete & Non-preemptive shortest-job-first scheduling using
+a min-heap ordered by burst time, then arrival/PID. \\
+Round Robin scheduler & Complete & Uses a FIFO ready queue, configurable
+quantum, requeues unfinished processes, and counts context switches. \\
+Priority scheduler & Complete & Non-preemptive priority scheduling using lower
+priority number as higher priority, with arrival/PID tie breaking. \\
+Metrics & Complete & Computes average waiting time, turnaround time, response
+time, CPU utilization, throughput, context switches, and total runtime. \\
+Terminal visualization & Complete & Prints Gantt charts, per-process tables,
+metric summaries, and all-algorithm comparison tables. \\
+CSV export & Complete & Exports one metrics row per algorithm run for external
+analysis or dashboard generation. \\
+C unit tests & Complete for main cases & Unit tests cover process reset,
+queues, input parsing, each scheduler, and metrics formulas. Current local run:
+123/123 assertions passed. \\
+Fuzzing scaffolding & Partial & AFL++ harnesses and seed corpora exist for
+input parsing and queue behavior, but long campaign evidence is not complete. \\
+Final cleanup & Remaining & Remove or ignore stale ML-specific files before
+final submission, update README wording, add final screenshots, and document
+validation results. \\
+\bottomrule
+\end{longtable}
+
+\section{Updated System Architecture}
+
+\begin{center}
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[
+  node distance=0.85cm and 1.1cm,
+  box/.style={
+    rectangle,
+    rounded corners=2pt,
+    draw=heading,
+    fill=lightgray,
+    very thick,
+    align=center,
+    minimum width=3.2cm,
+    minimum height=0.95cm
+  },
+  arrow/.style={-Latex, thick, draw=heading}
+]
+\node[box] (cli) {CLI\\\texttt{src/main.c}};
+\node[box, below=of cli] (input) {Input Loader\\\texttt{src/input.c}};
+\node[box, below=of input] (dispatch) {Schedule Dispatcher\\\texttt{schedule()}};
+
+\node[box, below left=of dispatch, xshift=-1.6cm] (fcfs) {FCFS};
+\node[box, below=of dispatch] (sjf) {SJF};
+\node[box, below right=of dispatch, xshift=1.6cm] (rr) {Round Robin};
+\node[box, right=of rr, xshift=1.3cm] (prio) {Priority};
+
+\node[box, below=1.2cm of sjf] (engine) {Simulation Result\\Gantt Timeline};
+\node[box, below left=of engine, xshift=-0.8cm] (metrics) {Metrics Engine\\\texttt{src/metrics.c}};
+\node[box, below right=of engine, xshift=0.8cm] (viz) {Terminal Output\\CSV Export};
+
+\draw[arrow] (cli) -- (input);
+\draw[arrow] (input) -- (dispatch);
+\draw[arrow] (dispatch) -- (fcfs);
+\draw[arrow] (dispatch) -- (sjf);
+\draw[arrow] (dispatch) -- (rr);
+\draw[arrow] (dispatch) -- (prio);
+\draw[arrow] (fcfs) |- (engine);
+\draw[arrow] (sjf) -- (engine);
+\draw[arrow] (rr) |- (engine);
+\draw[arrow] (prio) |- (engine);
+\draw[arrow] (engine) -- (metrics);
+\draw[arrow] (metrics) -- (viz);
+\end{tikzpicture}
+}
+\end{center}
+
+The main program parses command-line options, loads a workload, selects a
+scheduler, and sends the process list into the common scheduling dispatcher.
+Each scheduler updates process timing fields and appends execution intervals to
+the simulation result. The metrics module then computes aggregate and
+per-process measurements, and the visualization module prints the Gantt chart,
+metric table, and comparison output.
+
+\section{Working System Screenshots}
+
+The current system is a terminal application, so the screenshots below are
+terminal output captures from local execution.
+
+\subsection{All Algorithms on the Basic Workload}
+
+\begin{lstlisting}[style=terminal,caption={Command: ./cpu\_scheduler -s basic -a all}]
+Gantt chart
+| P1 0-8 || P2 8-12 || P3 12-21 || P4 21-26 |
+
+Metrics for fcfs
+PID ARR BUR PRI START DONE WAIT TURN RESP
+  1   0   8   3     0    8    0    8    0
+  2   1   4   1     8   12    7   11    7
+  3   2   9   4    12   21   10   19   10
+  4   3   5   2    21   26   18   23   18
+avg_wait=8.75 avg_turn=15.25 avg_resp=8.75 util=1.00 thr=0.15 ctx=0 total=26
+
+Gantt chart
+| P1 0-8 || P2 8-12 || P4 12-17 || P3 17-26 |
+
+Metrics for sjf
+avg_wait=7.75 avg_turn=14.25 avg_resp=7.75 util=1.00 thr=0.15 ctx=0 total=26
+
+Gantt chart
+| P1 0-2 || P2 2-4 || P3 4-6 || P1 6-8 || P4 8-10 |
+| P2 10-12 || P3 12-14 || P1 14-16 || P4 16-18 |
+| P3 18-20 || P1 20-22 || P4 22-23 || P3 23-26 |
+
+Metrics for rr
+avg_wait=12.75 avg_turn=19.25 avg_resp=2.00 util=1.00 thr=0.15 ctx=12 total=26
+
+Gantt chart
+| P1 0-8 || P2 8-12 || P4 12-17 || P3 17-26 |
+
+Metrics for priority
+avg_wait=7.75 avg_turn=14.25 avg_resp=7.75 util=1.00 thr=0.15 ctx=0 total=26
+
+Comparison
+algo             wait       turn       resp       util        thr        ctx
+fcfs              8.75      15.25       8.75       1.00       0.15          0
+sjf               7.75      14.25       7.75       1.00       0.15          0
+rr               12.75      19.25       2.00       1.00       0.15         12
+priority          7.75      14.25       7.75       1.00       0.15          0
+\end{lstlisting}
+
+\subsection{Round Robin Workload}
+
+\begin{lstlisting}[style=terminal,caption={Command: ./cpu\_scheduler -f workloads/sample\_rr.txt -a rr -q 4}]
+Gantt chart
+| P1 0-4 || P2 4-7 || P3 7-10 || P1 10-30 |
+Ticks: 0 5 10 15 20 25 30
+
+Metrics for rr
+PID ARR BUR PRI START DONE WAIT TURN RESP
+  1   0  24   0     0   30    6   30    0
+  2   0   3   0     4    7    4    7    4
+  3   0   3   0     7   10    7   10    7
+avg_wait=5.67 avg_turn=15.67 avg_resp=3.67 util=1.00 thr=0.10 ctx=3 total=30
+\end{lstlisting}
+
+\subsection{Unit Test Evidence}
+
+\begin{lstlisting}[style=terminal,caption={Command: make test-c}]
+test_process:  19/19 passed
+test_queue:    22/22 passed
+test_input:    21/21 passed
+test_fcfs:     19/19 passed
+test_sjf:      12/12 passed
+test_rr:        9/9 passed
+test_priority:  8/8 passed
+test_metrics:  13/13 passed
+
+Total: 123/123 assertions passed
+\end{lstlisting}
+
+\section{Challenges Faced}
+
+\begin{itemize}
+  \item \textbf{Consistent timing rules:} Each algorithm updates start time,
+  completion time, response time, and waiting time differently. Keeping these
+  fields consistent required a shared reset path and a metrics module that
+  recomputes values from final process state.
+
+  \item \textbf{Tie-breaking:} To make results deterministic, FCFS, SJF, and
+  priority scheduling need stable tie-breaking rules. The implementation uses
+  arrival time and PID where needed.
+
+  \item \textbf{Round Robin arrivals:} Round Robin must add processes that
+  arrive during a quantum and must requeue unfinished jobs without losing FIFO
+  order.
+
+  \item \textbf{Input validation:} The workload parser must reject malformed
+  input, duplicate PIDs, zero or negative burst time, negative arrival time,
+  negative priority, embedded NUL bytes, and extra tokens.
+
+  \item \textbf{Scope cleanup:} The earlier ML prediction feature was removed
+  from the current project plan, but some legacy files and README references
+  still exist in the repository. These should be cleaned before final
+  submission.
+
+  \item \textbf{Context-switch accounting:} Context-switch overhead and
+  context-switch counts need one final consistency pass across all algorithms
+  before the final submission.
+
+  \item \textbf{Verification limits:} Unit tests pass for the current cases,
+  but long fuzzing campaigns and memory-leak evidence still need to be
+  documented.
+\end{itemize}
+
+\section{Plan for Completing Remaining Work}
+
+\begin{enumerate}
+  \item Remove or isolate stale ML-related files and command-line references so
+  the final codebase matches the non-ML project scope.
+
+  \item Add final screenshots as image files if required by the instructor, or
+  keep terminal captures if text-based screenshots are accepted.
+
+  \item Add more edge-case tests for context-switch overhead, empty/invalid
+  workloads, large workloads near \texttt{MAX\_PROCESSES}, and comparison-mode
+  CSV export.
+
+  \item Standardize context-switch overhead behavior and context-switch count
+  reporting across FCFS, SJF, Round Robin, and priority scheduling.
+
+  \item Run memory checks on a machine with Valgrind or an equivalent sanitizer
+  setup and record the result.
+
+  \item Run at least one documented AFL++ baseline campaign for the input
+  parser and queue harness, then save the campaign summary.
+
+  \item Update \texttt{README.md} so the build, run, testing, and project
+  status sections describe only the final scheduler simulator.
+
+  \item Prepare the final code submission as a GitHub repository or ZIP with
+  source files, headers, tests, workloads, Makefile, and this report.
+\end{enumerate}
+
+\section{Code Submission Organization}
+
+The repository is already organized around clear module boundaries:
+
+\begin{lstlisting}[style=terminal]
+include/               Public headers and shared types
+src/                   Main C implementation
+src/schedulers/        FCFS, SJF, Round Robin, and priority schedulers
+tests/                 C unit tests
+workloads/             Sample scheduler workloads
+fuzz/                  AFL++ fuzzing harnesses and seed corpora
+scripts/fuzz/          Fuzzing helper scripts
+reports/               Phase reports
+Makefile               Build, test, and fuzz commands
+\end{lstlisting}
+
+The main source files include function-level organization and comments where
+they clarify behavior. Additional comments should be added only where the final
+implementation has non-obvious scheduling logic or validation decisions.
+
+\section{Conclusion}
+
+Phase 2 has produced a working C implementation of the core CPU scheduling
+simulator. The main algorithms, workload parser, timeline generation, metrics,
+terminal visualization, CSV export, and C unit tests are implemented and
+working locally. The remaining work is primarily cleanup, documentation,
+expanded validation, and final packaging.
+
+\end{document}
