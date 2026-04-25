@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>CPU Scheduler Simulator</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com" rel="preconnect">
+  <link crossorigin href="https://fonts.gstatic.com" rel="preconnect">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "surface-container-high": "#272a31",
+            "secondary-fixed": "#52ffac",
+            "surface": "#10131a",
+            "on-error-container": "#ffdad6",
+            "tertiary-fixed-dim": "#00daf3",
+            "surface-container-lowest": "#0b0e14",
+            "on-primary": "#003642",
+            "background": "#10131a",
+            "on-tertiary": "#00363d",
+            "surface-dim": "#10131a",
+            "surface-bright": "#363940",
+            "on-secondary-container": "#007146",
+            "surface-container-low": "#191c22",
+            "error": "#ffb4ab",
+            "on-background": "#e1e2eb",
+            "primary-fixed": "#b4ebff",
+            "error-container": "#93000a",
+            "on-secondary-fixed": "#002111",
+            "primary-container": "#00d4ff",
+            "inverse-primary": "#00677e",
+            "inverse-surface": "#e1e2eb",
+            "on-secondary-fixed-variant": "#005231",
+            "outline-variant": "#3c494e",
+            "secondary-container": "#00ffa3",
+            "secondary-fixed-dim": "#00e290",
+            "on-tertiary-fixed-variant": "#004f58",
+            "on-tertiary-container": "#005963",
+            "surface-variant": "#32353c",
+            "primary": "#a8e8ff",
+            "on-secondary": "#003920",
+            "secondary": "#f5fff5",
+            "inverse-on-surface": "#2e3037",
+            "surface-container-highest": "#32353c",
+            "on-primary-fixed": "#001f27",
+            "on-primary-fixed-variant": "#004e5f",
+            "on-surface": "#e1e2eb",
+            "outline": "#859398",
+            "on-tertiary-fixed": "#001f24",
+            "tertiary": "#8aedff",
+            "on-error": "#690005",
+            "tertiary-fixed": "#9cf0ff",
+            "on-primary-container": "#00586b",
+            "primary-fixed-dim": "#3cd7ff",
+            "surface-tint": "#3cd7ff",
+            "tertiary-container": "#00d6ee",
+            "surface-container": "#1d2026",
+            "on-surface-variant": "#bbc9cf"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "gutter": "20px",
+            "md": "16px",
+            "container-padding": "32px",
+            "unit": "4px",
+            "sm": "8px",
+            "xs": "4px",
+            "xl": "48px",
+            "lg": "24px"
+          },
+          "fontFamily": {
+            "h1": ["Inter"],
+            "display": ["Inter"],
+            "h2": ["Inter"],
+            "mono-stats": ["Space Grotesk"],
+            "body-lg": ["Inter"],
+            "body-md": ["Inter"],
+            "label-caps": ["Inter"]
+          },
+          "fontSize": {
+            "h1": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "display": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "h2": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+            "mono-stats": ["14px", { "lineHeight": "1.4", "fontWeight": "500" }],
+            "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+            "body-md": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }],
+            "label-caps": ["12px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600" }]
+          }
+        }
+      }
+    }
+  </script>
+  <link href="style.css" rel="stylesheet">
+  <script defer src="js/schedulers.js"></script>
+  <script defer src="js/metrics.js"></script>
+  <script defer src="js/gantt.js"></script>
+  <script defer src="js/charts.js"></script>
+  <script defer src="js/main.js"></script>
+</head>
+<body class="bg-surface-container-lowest text-on-surface font-body-md antialiased min-h-screen flex flex-col relative overflow-x-hidden selection:bg-primary-container selection:text-on-primary-container">
+  <div class="ambient-glow top-0 left-1/4 w-[600px] h-[600px] bg-primary-container/5"></div>
+  <div class="ambient-glow bottom-0 right-1/4 w-[520px] h-[520px] bg-tertiary-container/5"></div>
+
+  <header class="bg-slate-950/80 backdrop-blur-xl docked full-width top-0 sticky z-50 border-b border-white/10 shadow-2xl shadow-cyan-900/20 font-inter antialiased">
+    <div class="flex justify-between items-center w-full px-8 h-16 max-w-screen-2xl mx-auto">
+      <a class="flex items-center gap-2" href="#hero" id="brandLink">
+        <span class="material-symbols-outlined text-cyan-400" style="font-variation-settings: 'FILL' 1;">memory</span>
+        <span class="text-xl font-bold text-white bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600">CoreSched</span>
+      </a>
+      <nav class="hidden md:flex items-center gap-6 h-full">
+        <a class="text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all duration-200 active:scale-95 cursor-pointer flex items-center h-full px-2" href="#input" id="navInput">Input</a>
+        <a class="text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all duration-200 active:scale-95 cursor-pointer flex items-center h-full px-2" href="#gantt" id="navGantt">Gantt</a>
+        <a class="text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all duration-200 active:scale-95 cursor-pointer flex items-center h-full px-2" href="#metrics" id="navMetrics">Metrics</a>
+        <a class="text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all duration-200 active:scale-95 cursor-pointer flex items-center h-full px-2" href="#compare" id="navCompare">Compare</a>
+      </nav>
+      <div class="flex items-center gap-3">
+        <a id="navRunLink" class="hidden sm:flex bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-body-md font-medium px-4 py-2 rounded-lg hover:opacity-90 transition-opacity shadow-[0_0_15px_rgba(6,182,212,0.3)] border border-white/10" href="#input">Start Simulation</a>
+        <button id="settingsButton" class="p-2 text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all duration-200 rounded-full flex items-center justify-center" type="button" aria-label="Settings">
+          <span class="material-symbols-outlined">settings</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-grow w-full max-w-screen-2xl mx-auto px-container-padding py-xl flex flex-col gap-xl z-10 relative">
+    <section id="hero" class="text-center z-10 max-w-4xl mx-auto flex flex-col items-center gap-lg pt-lg pb-xl reveal">
+      <span class="font-label-caps text-label-caps uppercase text-primary-fixed bg-primary-container/10 border border-primary-container/20 rounded-full px-4 py-2">Interactive OS scheduling visualizer</span>
+      <h1 class="font-display text-display text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary-container">CPU Scheduler Simulator</h1>
+      <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">Interactive scheduling algorithm visualizer with editable workloads, live timelines, computed metrics, and side-by-side strategy comparison.</p>
+      <div class="flex flex-col sm:flex-row gap-md mt-sm w-full justify-center">
+        <a id="heroStartButton" class="bg-gradient-to-r from-primary to-primary-container text-on-primary-container font-h2 text-h2 py-sm px-lg rounded-xl shadow-[0_0_20px_rgba(0,212,255,0.3)] hover:shadow-[0_0_30px_rgba(0,212,255,0.5)] transition-all duration-300 border border-white/20 border-t-white/40" href="#input">Start Simulation</a>
+        <button id="heroSampleButton" class="bg-surface-container/50 backdrop-blur-md text-primary border border-outline-variant py-sm px-lg rounded-xl hover:bg-surface-container transition-all duration-300 font-h2 text-h2" type="button" data-load-sample="basic">Try Basic Workload</button>
+      </div>
+    </section>
+
+    <section class="w-full max-w-5xl mx-auto z-10 mb-lg relative reveal" aria-label="Algorithm preview">
+      <div class="w-full bg-surface-container-low/40 backdrop-blur-xl border border-white/10 rounded-xl p-lg shadow-2xl relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
+        <div class="flex items-center justify-between mb-md">
+          <h2 class="font-h2 text-h2 text-on-surface">Core Algorithms</h2>
+          <span class="font-mono-stats text-mono-stats text-primary-fixed">FCFS · SJF · RR · Priority</span>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-md">
+          <article class="bg-white/[0.03] backdrop-blur-[20px] border border-white/[0.08] rounded-xl p-lg hover:-translate-y-1 transition-transform duration-300 relative overflow-hidden group">
+            <div class="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-blue-400/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div class="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 mb-md border border-blue-500/30">
+              <span class="material-symbols-outlined">queue</span>
+            </div>
+            <h3 class="font-h2 text-h2 text-on-surface mb-sm">FCFS</h3>
+            <p class="font-body-md text-body-md text-on-surface-variant">First-Come, First-Served. Runs by arrival time with PID tie-breaks.</p>
+          </article>
+          <article class="bg-white/[0.03] backdrop-blur-[20px] border border-white/[0.08] rounded-xl p-lg hover:-translate-y-1 transition-transform duration-300 relative overflow-hidden group">
+            <div class="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-secondary-fixed/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div class="w-12 h-12 rounded-full bg-secondary-container/20 flex items-center justify-center text-secondary-fixed mb-md border border-secondary-container/30">
+              <span class="material-symbols-outlined">sort</span>
+            </div>
+            <h3 class="font-h2 text-h2 text-on-surface mb-sm">SJF</h3>
+            <p class="font-body-md text-body-md text-on-surface-variant">Non-preemptive shortest burst first, then arrival and PID order.</p>
+          </article>
+          <article class="bg-white/[0.03] backdrop-blur-[20px] border border-white/[0.08] rounded-xl p-lg hover:-translate-y-1 transition-transform duration-300 relative overflow-hidden group">
+            <div class="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-orange-400/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div class="w-12 h-12 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-400 mb-md border border-orange-500/30">
+              <span class="material-symbols-outlined">update</span>
+            </div>
+            <h3 class="font-h2 text-h2 text-on-surface mb-sm">Round Robin</h3>
+            <p class="font-body-md text-body-md text-on-surface-variant">FIFO ready queue with configurable quantum and PID-change switches.</p>
+          </article>
+          <article class="bg-white/[0.03] backdrop-blur-[20px] border border-white/[0.08] rounded-xl p-lg hover:-translate-y-1 transition-transform duration-300 relative overflow-hidden group">
+            <div class="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-purple-400/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div class="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 mb-md border border-purple-500/30">
+              <span class="material-symbols-outlined">priority_high</span>
+            </div>
+            <h3 class="font-h2 text-h2 text-on-surface mb-sm">Priority</h3>
+            <p class="font-body-md text-body-md text-on-surface-variant">Lowest priority number wins, with deterministic arrival and PID ties.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="input" class="scroll-mt-24 flex flex-col gap-lg reveal">
+      <header class="flex flex-col gap-xs">
+        <h2 class="font-display text-display text-on-surface">Workload Definition</h2>
+        <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">Edit process parameters, load a preset scenario, choose a scheduler, then run the browser-side simulation.</p>
+      </header>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <section class="lg:col-span-8 bg-surface-container/30 backdrop-blur-xl border border-outline-variant/30 rounded-xl flex flex-col overflow-hidden relative shadow-2xl shadow-black/50">
+          <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+          <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 px-6 py-4 border-b border-outline-variant/20 bg-surface-container-low/50">
+            <h3 class="font-h2 text-h2 text-on-surface flex items-center gap-2">
+              <span class="material-symbols-outlined text-primary-fixed-dim">list_alt</span>
+              Process Queue
+            </h3>
+            <div class="flex gap-3">
+              <button id="clearProcessButton" class="px-3 py-1.5 rounded-md border border-outline-variant/50 text-on-surface-variant font-label-caps text-label-caps uppercase hover:bg-surface-variant hover:text-on-surface transition-colors" type="button">Clear All</button>
+              <button id="addProcessButton" class="px-3 py-1.5 rounded-md bg-surface-bright text-on-surface font-label-caps text-label-caps uppercase hover:bg-surface-container-highest transition-colors flex items-center gap-1 border border-outline-variant/30" type="button">
+                <span class="material-symbols-outlined text-[16px]">add</span>
+                Add Process
+              </button>
+            </div>
+          </div>
+          <div class="grid grid-cols-12 gap-4 px-6 py-3 border-b border-outline-variant/30 bg-surface-container-highest/20 font-label-caps text-label-caps text-on-surface-variant uppercase">
+            <div class="col-span-2">PID</div>
+            <div class="col-span-3">Arrival Time</div>
+            <div class="col-span-3">Burst Time</div>
+            <div class="col-span-3">Priority</div>
+            <div class="col-span-1 text-right">Actions</div>
+          </div>
+          <div id="processRows" class="flex flex-col"></div>
+          <p id="validationMessage" class="min-h-[28px] px-6 py-3 font-mono-stats text-mono-stats text-error"></p>
+        </section>
+
+        <aside class="lg:col-span-4 flex flex-col gap-6">
+          <section class="bg-surface-container/30 backdrop-blur-xl border border-outline-variant/30 rounded-xl p-6 shadow-xl shadow-black/40 relative overflow-hidden">
+            <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+            <label class="font-h2 text-h2 text-on-surface mb-4 block" for="sampleSelect">Sample Workloads</label>
+            <div class="relative">
+              <select id="sampleSelect" class="w-full bg-surface-container-low border border-outline-variant/50 rounded-lg px-4 py-3 pr-10 text-left font-body-md text-on-surface hover:bg-surface-container transition-colors">
+                <option value="basic">Basic</option>
+                <option value="rr">Round Robin</option>
+                <option value="priority">Priority</option>
+                <option value="edge">Edge</option>
+              </select>
+            </div>
+          </section>
+
+          <section class="bg-surface-container-high/80 backdrop-blur-2xl border border-outline-variant/40 rounded-xl p-6 flex flex-col gap-6 shadow-[0_8px_32px_rgba(0,0,0,0.5)] relative overflow-hidden z-20">
+            <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary-container/30 to-transparent"></div>
+            <div class="flex flex-col gap-2">
+              <span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Scheduling Strategy</span>
+              <div class="flex flex-wrap gap-2 bg-surface-container-lowest/50 p-1 rounded-lg border border-outline-variant/20" role="group" aria-label="Scheduling algorithm">
+                <button id="algorithmFcfs" class="segmented-button px-4 py-1.5 rounded-md font-body-md text-sm" type="button" data-algorithm="fcfs" aria-pressed="true">FCFS</button>
+                <button id="algorithmSjf" class="segmented-button px-4 py-1.5 rounded-md font-body-md text-sm" type="button" data-algorithm="sjf" aria-pressed="false">SJF</button>
+                <button id="algorithmRr" class="segmented-button px-4 py-1.5 rounded-md font-body-md text-sm" type="button" data-algorithm="rr" aria-pressed="false">RR</button>
+                <button id="algorithmPriority" class="segmented-button px-4 py-1.5 rounded-md font-body-md text-sm" type="button" data-algorithm="priority" aria-pressed="false">Priority</button>
+                <button id="algorithmAll" class="segmented-button px-4 py-1.5 rounded-md font-body-md text-sm border-l border-outline-variant/30 ml-1 pl-5" type="button" data-algorithm="all" aria-pressed="false">All</button>
+              </div>
+            </div>
+            <div id="quantumPanel" class="flex flex-col gap-2">
+              <div class="flex justify-between items-end">
+                <label class="font-label-caps text-label-caps text-on-surface-variant uppercase" for="quantumInput">Time Quantum</label>
+                <span id="quantumValue" class="font-mono-stats text-mono-stats text-primary-fixed">2 ms</span>
+              </div>
+              <input id="quantumInput" class="w-full bg-surface border border-outline-variant/50 rounded-md px-3 py-2 font-mono-stats text-mono-stats text-on-surface outline-none focus:border-primary-container focus:bg-surface-container-highest transition-all" type="number" min="1" max="20" step="1" value="2">
+            </div>
+            <button id="runSimulationButton" class="w-full bg-primary-container text-on-primary-container font-h2 text-[18px] font-semibold px-8 py-4 rounded-xl hover:shadow-[0_0_25px_rgba(0,212,255,0.3)] hover:bg-tertiary-container hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-3 relative overflow-hidden group" type="button">
+              <span class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></span>
+              <span class="material-symbols-outlined text-[24px] relative z-10" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+              <span class="relative z-10">Run Simulation</span>
+            </button>
+          </section>
+        </aside>
+      </div>
+
+      <section class="flex flex-col gap-md pt-md">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+          <div>
+            <h3 class="font-h1 text-h1 text-on-surface">Workload Library</h3>
+            <p class="font-body-md text-body-md text-on-surface-variant">Preset cards from the Stitch library load directly into the editable table.</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-lg">
+          <article class="group bg-surface-container/30 backdrop-blur-xl border border-white/10 rounded-xl p-6 flex flex-col h-full hover:bg-surface-container/50 hover:border-primary-fixed/30 transition-all duration-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] relative overflow-hidden noise-bg">
+            <div class="content-relative flex flex-col h-full">
+              <div class="flex items-center gap-4 mb-6">
+                <div class="w-10 h-10 rounded-lg bg-surface-variant flex items-center justify-center text-primary-fixed border border-white/5"><span class="material-symbols-outlined">linear_scale</span></div>
+                <div><h4 class="font-h2 text-h2 text-on-surface">Basic</h4><p class="font-body-md text-body-md text-on-surface-variant mt-1">Staggered arrivals</p></div>
+              </div>
+              <div class="flex gap-8 mb-6"><div><div class="font-label-caps text-label-caps text-outline uppercase mb-1">Processes</div><div class="font-mono-stats text-mono-stats text-on-surface">04</div></div><div><div class="font-label-caps text-label-caps text-outline uppercase mb-1">Total Burst</div><div class="font-mono-stats text-mono-stats text-on-surface">21ms</div></div></div>
+              <div class="h-4 w-full bg-surface-container-lowest rounded overflow-hidden flex gap-px mb-6"><div class="h-full bg-blue-500" style="width:29%"></div><div class="h-full bg-emerald-500" style="width:19%"></div><div class="h-full bg-orange-500" style="width:38%"></div><div class="h-full bg-purple-500" style="width:14%"></div></div>
+              <button id="loadBasicCard" class="mt-auto w-full py-3 px-4 rounded-lg bg-surface-container-high border border-outline-variant/30 text-on-surface font-body-md text-body-md font-semibold flex justify-center items-center gap-2 group-hover:bg-primary-container group-hover:text-on-primary-container group-hover:border-primary-container transition-all duration-200" type="button" data-load-sample="basic"><span class="material-symbols-outlined text-[18px]">play_arrow</span>Load</button>
+            </div>
+          </article>
+          <article class="group bg-surface-container/30 backdrop-blur-xl border border-white/10 rounded-xl p-6 flex flex-col h-full hover:bg-surface-container/50 hover:border-orange-400/30 transition-all duration-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] relative overflow-hidden noise-bg">
+            <div class="content-relative flex flex-col h-full">
+              <div class="flex items-center gap-4 mb-6"><div class="w-10 h-10 rounded-lg bg-surface-variant flex items-center justify-center text-orange-400 border border-white/5"><span class="material-symbols-outlined">rotate_right</span></div><div><h4 class="font-h2 text-h2 text-on-surface">Round Robin</h4><p class="font-body-md text-body-md text-on-surface-variant mt-1">Time-slice stress</p></div></div>
+              <div class="flex gap-8 mb-6"><div><div class="font-label-caps text-label-caps text-outline uppercase mb-1">Processes</div><div class="font-mono-stats text-mono-stats text-on-surface">04</div></div><div><div class="font-label-caps text-label-caps text-outline uppercase mb-1">Default q</div><div class="font-mono-stats text-mono-stats text-on-surface">2ms</div></div></div>
+              <div class="h-4 w-full bg-surface-container-lowest rounded overflow-hidden flex gap-px mb-6"><div class="h-full bg-orange-400 w-[10%]"></div><div class="h-full bg-orange-500 w-[8%]"></div><div class="h-full bg-orange-400 w-[12%]"></div><div class="h-full bg-orange-600 w-[10%]"></div><div class="h-full bg-orange-500 w-[14%]"></div><div class="h-full bg-orange-400 w-[12%]"></div><div class="h-full bg-orange-600 w-[18%]"></div><div class="h-full bg-orange-500 w-[16%]"></div></div>
+              <button id="loadRrCard" class="mt-auto w-full py-3 px-4 rounded-lg bg-surface-container-high border border-outline-variant/30 text-on-surface font-body-md text-body-md font-semibold flex justify-center items-center gap-2 group-hover:bg-orange-400 group-hover:text-slate-950 group-hover:border-orange-400 transition-all duration-200" type="button" data-load-sample="rr"><span class="material-symbols-outlined text-[18px]">play_arrow</span>Load</button>
+            </div>
+          </article>
+          <article class="group bg-surface-container/30 backdrop-blur-xl border border-white/10 rounded-xl p-6 flex flex-col h-full hover:bg-surface-container/50 hover:border-purple-400/30 transition-all duration-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] relative overflow-hidden noise-bg">
+            <div class="content-relative flex flex-col h-full">
+              <div class="flex items-center gap-4 mb-6"><div class="w-10 h-10 rounded-lg bg-surface-variant flex items-center justify-center text-purple-400 border border-white/5"><span class="material-symbols-outlined">warning</span></div><div><h4 class="font-h2 text-h2 text-on-surface">Priority</h4><p class="font-body-md text-body-md text-on-surface-variant mt-1">Priority inversion shape</p></div></div>
+              <div class="flex gap-8 mb-6"><div><div class="font-label-caps text-label-caps text-outline uppercase mb-1">Processes</div><div class="font-mono-stats text-mono-stats text-on-surface">05</div></div><div><div class="font-label-caps text-label-caps text-outline uppercase mb-1">Levels</div><div class="font-mono-stats text-mono-stats text-on-surface">1-5</div></div></div>
+              <div class="h-4 w-full bg-surface-container-lowest rounded overflow-hidden flex gap-px mb-6"><div class="h-full bg-purple-400" style="width:52%"></div><div class="h-full bg-purple-500" style="width:5%"></div><div class="h-full bg-purple-300" style="width:10%"></div><div class="h-full bg-purple-600" style="width:5%"></div><div class="h-full bg-purple-400" style="width:28%"></div></div>
+              <button id="loadPriorityCard" class="mt-auto w-full py-3 px-4 rounded-lg bg-surface-container-high border border-outline-variant/30 text-on-surface font-body-md text-body-md font-semibold flex justify-center items-center gap-2 group-hover:bg-purple-500 group-hover:text-white group-hover:border-purple-500 transition-all duration-200" type="button" data-load-sample="priority"><span class="material-symbols-outlined text-[18px]">play_arrow</span>Load</button>
+            </div>
+          </article>
+          <article class="group bg-surface-container/30 backdrop-blur-xl border border-white/10 rounded-xl p-6 flex flex-col h-full hover:bg-surface-container/50 hover:border-secondary-fixed/30 transition-all duration-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] relative overflow-hidden noise-bg">
+            <div class="content-relative flex flex-col h-full">
+              <div class="flex items-center gap-4 mb-6"><div class="w-10 h-10 rounded-lg bg-surface-variant flex items-center justify-center text-secondary-fixed border border-white/5"><span class="material-symbols-outlined">timer</span></div><div><h4 class="font-h2 text-h2 text-on-surface">Edge</h4><p class="font-body-md text-body-md text-on-surface-variant mt-1">Initial idle time</p></div></div>
+              <div class="flex gap-8 mb-6"><div><div class="font-label-caps text-label-caps text-outline uppercase mb-1">Processes</div><div class="font-mono-stats text-mono-stats text-on-surface">01</div></div><div><div class="font-label-caps text-label-caps text-outline uppercase mb-1">Arrival</div><div class="font-mono-stats text-mono-stats text-on-surface">5ms</div></div></div>
+              <div class="h-4 w-full bg-surface-container-lowest rounded overflow-hidden flex gap-px mb-6"><div class="h-full idle-dot" style="width:62%"></div><div class="h-full bg-secondary-fixed" style="width:38%"></div></div>
+              <button id="loadEdgeCard" class="mt-auto w-full py-3 px-4 rounded-lg bg-surface-container-high border border-outline-variant/30 text-on-surface font-body-md text-body-md font-semibold flex justify-center items-center gap-2 group-hover:bg-secondary-fixed group-hover:text-on-secondary-fixed group-hover:border-secondary-fixed transition-all duration-200" type="button" data-load-sample="edge"><span class="material-symbols-outlined text-[18px]">play_arrow</span>Load</button>
+            </div>
+          </article>
+        </div>
+      </section>
+    </section>
+
+    <section id="gantt" class="scroll-mt-24 flex flex-col gap-lg reveal">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-md">
+        <div>
+          <h2 class="font-display text-display text-on-surface mb-xs">Simulation Results</h2>
+          <p class="font-body-lg text-body-lg text-on-surface-variant">Algorithm: <span id="ganttAlgorithmLabel" class="text-primary font-medium">FCFS</span></p>
+        </div>
+        <div class="glass-card rounded-full p-1 flex items-center gap-1 shadow-lg shadow-black/50">
+          <button id="playbackPrevious" class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-white/5 transition-colors" type="button" title="Previous Step"><span class="material-symbols-outlined">skip_previous</span></button>
+          <button id="playbackPlay" class="w-12 h-12 rounded-full flex items-center justify-center bg-primary-container text-on-primary-container hover:bg-primary shadow-[0_0_20px_rgba(0,212,255,0.3)] transition-all" type="button" title="Play"><span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">play_arrow</span></button>
+          <button id="playbackNext" class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-white/5 transition-colors" type="button" title="Next Step"><span class="material-symbols-outlined">skip_next</span></button>
+          <div class="w-px h-6 bg-white/10 mx-2"></div>
+          <button id="playbackReset" class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:text-error hover:bg-error/10 transition-colors" type="button" title="Reset"><span class="material-symbols-outlined">replay</span></button>
+        </div>
+      </div>
+      <div class="glass-card rounded-xl p-lg flex flex-col gap-md relative overflow-hidden">
+        <div class="absolute inset-0 noise-overlay pointer-events-none rounded-xl"></div>
+        <div class="content-relative flex flex-col lg:flex-row lg:items-center justify-between gap-md">
+          <h3 class="font-h2 text-h2 text-on-surface flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary">timeline</span>
+            Gantt Timeline
+          </h3>
+          <div id="ganttLegend" class="flex flex-wrap items-center gap-4 bg-surface-container-low px-4 py-2 rounded-full border border-white/5"></div>
+        </div>
+        <div id="ganttContainer" class="content-relative flex flex-col gap-md"></div>
+      </div>
+    </section>
+
+    <section id="metrics" class="scroll-mt-24 flex flex-col gap-lg reveal">
+      <header class="flex flex-col gap-2">
+        <h2 class="font-display text-display text-on-surface">Metrics Dashboard</h2>
+        <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">Computed from the active run: <span id="metricsAlgorithmLabel" class="text-primary font-medium">FCFS</span></p>
+      </header>
+      <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+        <article class="bg-surface-container-low/50 backdrop-blur-xl border border-outline-variant/30 rounded-xl p-6 relative overflow-hidden shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] flex flex-col justify-between h-[140px]">
+          <div class="absolute inset-0 noise-overlay"></div><div class="flex justify-between items-start z-10"><span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Avg Waiting</span><span class="material-symbols-outlined text-primary/40 text-xl">timer</span></div><div class="z-10 flex items-baseline gap-2"><span id="avgWaitingValue" class="font-mono-stats text-h1 text-on-surface">0</span><span class="font-mono-stats text-mono-stats text-on-surface-variant">ms</span></div>
+        </article>
+        <article class="bg-surface-container-low/50 backdrop-blur-xl border border-outline-variant/30 rounded-xl p-6 relative overflow-hidden shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] flex flex-col justify-between h-[140px]">
+          <div class="absolute inset-0 noise-overlay"></div><div class="flex justify-between items-start z-10"><span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Avg Turnaround</span><span class="material-symbols-outlined text-primary/40 text-xl">sync</span></div><div class="z-10 flex items-baseline gap-2"><span id="avgTurnaroundValue" class="font-mono-stats text-h1 text-on-surface">0</span><span class="font-mono-stats text-mono-stats text-on-surface-variant">ms</span></div>
+        </article>
+        <article class="bg-surface-container-low/50 backdrop-blur-xl border border-outline-variant/30 rounded-xl p-6 relative overflow-hidden shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] flex flex-col justify-between h-[140px]">
+          <div class="absolute inset-0 noise-overlay"></div><div class="flex justify-between items-start z-10"><span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Avg Response</span><span class="material-symbols-outlined text-primary/40 text-xl">bolt</span></div><div class="z-10 flex items-baseline gap-2"><span id="avgResponseValue" class="font-mono-stats text-h1 text-on-surface">0</span><span class="font-mono-stats text-mono-stats text-on-surface-variant">ms</span></div>
+        </article>
+        <article class="bg-surface-container-low/50 backdrop-blur-xl border border-outline-variant/30 rounded-xl p-6 relative overflow-hidden shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] flex flex-col justify-between h-[140px]">
+          <div class="absolute inset-0 noise-overlay"></div>
+          <div class="flex justify-between items-start z-10 w-full"><span class="font-label-caps text-label-caps text-on-surface-variant uppercase">CPU Util</span><span class="material-symbols-outlined text-primary/40 text-xl">analytics</span></div>
+          <div class="z-10 flex items-center gap-4 w-full justify-between mt-2">
+            <svg class="w-16 h-16" viewBox="0 0 100 100" aria-label="CPU utilization ring" role="img">
+              <circle cx="50" cy="50" r="42" fill="none" stroke="#32353c" stroke-width="10"></circle>
+              <circle id="cpuUtilRing" class="util-ring" cx="50" cy="50" r="42" fill="none" stroke="#00d4ff" stroke-width="10" stroke-linecap="round"></circle>
+            </svg>
+            <span id="cpuUtilValue" class="font-mono-stats text-h2 text-on-surface">0%</span>
+          </div>
+        </article>
+        <article class="bg-surface-container-low/50 backdrop-blur-xl border border-outline-variant/30 rounded-xl p-6 relative overflow-hidden shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] flex flex-col justify-between h-[140px]">
+          <div class="absolute inset-0 noise-overlay"></div><div class="flex justify-between items-start z-10"><span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Throughput</span><span class="material-symbols-outlined text-primary/40 text-xl">speed</span></div><div class="z-10 flex items-baseline gap-2"><span id="throughputValue" class="font-mono-stats text-h1 text-on-surface">0</span><span class="font-mono-stats text-mono-stats text-on-surface-variant">P/ms</span></div>
+        </article>
+        <article class="bg-surface-container-low/50 backdrop-blur-xl border border-outline-variant/30 rounded-xl p-6 relative overflow-hidden shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] flex flex-col justify-between h-[140px]">
+          <div class="absolute inset-0 noise-overlay"></div><div class="flex justify-between items-start z-10"><span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Ctx Switches</span><span class="material-symbols-outlined text-primary/40 text-xl">swap_horiz</span></div><div class="z-10 flex items-baseline gap-2"><span id="contextSwitchesValue" class="font-mono-stats text-h1 text-on-surface">0</span><span class="font-mono-stats text-mono-stats text-on-surface-variant">Total</span></div>
+        </article>
+      </section>
+      <section class="flex flex-col gap-4">
+        <h3 class="font-h2 text-h2 text-on-surface flex items-center gap-3"><span class="w-1 h-6 bg-primary-container rounded-full"></span>Process Execution Details</h3>
+        <div class="bg-surface-container-low/30 backdrop-blur-lg border border-outline-variant/30 rounded-xl overflow-x-auto shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+          <table class="w-full text-left border-collapse min-w-[900px]">
+            <thead>
+              <tr class="bg-surface-container/50 border-b border-outline-variant/30">
+                <th class="font-label-caps text-label-caps text-on-surface-variant px-6 py-4 uppercase font-semibold">PID</th>
+                <th class="font-label-caps text-label-caps text-on-surface-variant px-6 py-4 uppercase font-semibold">Arrival</th>
+                <th class="font-label-caps text-label-caps text-on-surface-variant px-6 py-4 uppercase font-semibold">Burst</th>
+                <th class="font-label-caps text-label-caps text-on-surface-variant px-6 py-4 uppercase font-semibold">Priority</th>
+                <th class="font-label-caps text-label-caps text-on-surface-variant px-6 py-4 uppercase font-semibold">Start</th>
+                <th class="font-label-caps text-label-caps text-on-surface-variant px-6 py-4 uppercase font-semibold">Completion</th>
+                <th class="font-label-caps text-label-caps text-on-surface-variant px-6 py-4 uppercase font-semibold text-right">Waiting</th>
+                <th class="font-label-caps text-label-caps text-on-surface-variant px-6 py-4 uppercase font-semibold text-right">Turnaround</th>
+                <th class="font-label-caps text-label-caps text-on-surface-variant px-6 py-4 uppercase font-semibold text-right">Response</th>
+              </tr>
+            </thead>
+            <tbody id="metricsTableBody" class="font-mono-stats text-mono-stats text-on-surface divide-y divide-outline-variant/10"></tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+
+    <section id="compare" class="scroll-mt-24 flex flex-col gap-lg reveal">
+      <header>
+        <h2 class="font-display text-display text-on-surface mb-sm">Algorithm Comparison</h2>
+        <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">Select All and run the workload to compare every scheduler against the same input.</p>
+      </header>
+      <div id="comparisonPlaceholder" class="glass-card noise-bg rounded-xl p-lg">
+        <div class="content-relative flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <h3 class="font-h2 text-h2 text-on-surface">Comparison waits for All mode</h3>
+            <p class="font-body-md text-body-md text-on-surface-variant mt-1">The chart and best-value table appear here after the All segmented control is selected and the simulation is run.</p>
+          </div>
+          <button id="comparisonAllButton" class="segmented-button px-4 py-2 rounded-md bg-primary-container/10 border border-primary-container/30 text-primary-fixed" type="button" data-algorithm="all">Select All</button>
+        </div>
+      </div>
+      <div id="comparisonContent" class="hidden flex flex-col gap-lg">
+        <section class="glass-card noise-bg rounded-xl p-lg overflow-x-auto">
+          <div class="content-relative">
+            <h3 class="font-h2 text-h2 text-on-surface mb-md">Metric Performance Overview</h3>
+            <div id="comparisonChart" class="comparison-chart"></div>
+            <div class="flex justify-center gap-lg mt-md pt-md min-w-[720px]">
+              <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-blue-500"></div><span class="font-label-caps text-label-caps text-on-surface">FCFS</span></div>
+              <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-emerald-500"></div><span class="font-label-caps text-label-caps text-on-surface">SJF</span></div>
+              <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-orange-500"></div><span class="font-label-caps text-label-caps text-on-surface">RR</span></div>
+              <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-purple-500"></div><span class="font-label-caps text-label-caps text-on-surface">Priority</span></div>
+            </div>
+          </div>
+        </section>
+        <section class="glass-card noise-bg rounded-xl p-lg overflow-hidden">
+          <div class="content-relative">
+            <h3 class="font-h2 text-h2 text-on-surface mb-md">Metrics Summary</h3>
+            <div id="comparisonTable" class="overflow-x-auto"></div>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <footer class="bg-slate-950 w-full py-12 px-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 font-inter text-xs uppercase mt-auto z-10">
+    <div class="font-black text-slate-200">CoreSched</div>
+    <div class="text-cyan-400 opacity-80">CPU Scheduler Simulator · Client-side dashboard</div>
+    <div class="flex flex-wrap justify-center gap-6 text-slate-500">
+      <a class="hover:text-cyan-400 transition-colors opacity-80 hover:opacity-100" href="#input">Input</a>
+      <a class="hover:text-cyan-400 transition-colors opacity-80 hover:opacity-100" href="#gantt">Gantt</a>
+      <a class="hover:text-cyan-400 transition-colors opacity-80 hover:opacity-100" href="#metrics">Metrics</a>
+      <a class="hover:text-cyan-400 transition-colors opacity-80 hover:opacity-100" href="#compare">Compare</a>
+    </div>
+  </footer>
+</body>
+</html>
