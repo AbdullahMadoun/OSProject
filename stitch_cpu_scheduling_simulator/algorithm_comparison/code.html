@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>CoreSched Simulator - Algorithm Comparison</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&amp;family=Space+Grotesk:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-high": "#272a31",
+                        "secondary-fixed": "#52ffac",
+                        "surface": "#10131a",
+                        "on-error-container": "#ffdad6",
+                        "tertiary-fixed-dim": "#00daf3",
+                        "surface-container-lowest": "#0b0e14",
+                        "on-primary": "#003642",
+                        "background": "#10131a",
+                        "on-tertiary": "#00363d",
+                        "surface-dim": "#10131a",
+                        "surface-bright": "#363940",
+                        "on-secondary-container": "#007146",
+                        "surface-container-low": "#191c22",
+                        "error": "#ffb4ab",
+                        "on-background": "#e1e2eb",
+                        "primary-fixed": "#b4ebff",
+                        "error-container": "#93000a",
+                        "on-secondary-fixed": "#002111",
+                        "primary-container": "#00d4ff",
+                        "inverse-primary": "#00677e",
+                        "inverse-surface": "#e1e2eb",
+                        "on-secondary-fixed-variant": "#005231",
+                        "outline-variant": "#3c494e",
+                        "secondary-container": "#00ffa3",
+                        "secondary-fixed-dim": "#00e290",
+                        "on-tertiary-fixed-variant": "#004f58",
+                        "on-tertiary-container": "#005963",
+                        "surface-variant": "#32353c",
+                        "primary": "#a8e8ff",
+                        "on-secondary": "#003920",
+                        "secondary": "#f5fff5",
+                        "inverse-on-surface": "#2e3037",
+                        "surface-container-highest": "#32353c",
+                        "on-primary-fixed": "#001f27",
+                        "on-primary-fixed-variant": "#004e5f",
+                        "on-surface": "#e1e2eb",
+                        "outline": "#859398",
+                        "on-tertiary-fixed": "#001f24",
+                        "tertiary": "#8aedff",
+                        "on-error": "#690005",
+                        "tertiary-fixed": "#9cf0ff",
+                        "on-primary-container": "#00586b",
+                        "primary-fixed-dim": "#3cd7ff",
+                        "surface-tint": "#3cd7ff",
+                        "tertiary-container": "#00d6ee",
+                        "surface-container": "#1d2026",
+                        "on-surface-variant": "#bbc9cf"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "gutter": "20px",
+                        "md": "16px",
+                        "container-padding": "32px",
+                        "unit": "4px",
+                        "sm": "8px",
+                        "xs": "4px",
+                        "xl": "48px",
+                        "lg": "24px"
+                    },
+                    "fontFamily": {
+                        "h1": ["Inter"],
+                        "display": ["Inter"],
+                        "h2": ["Inter"],
+                        "mono-stats": ["Space Grotesk"],
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-caps": ["Inter"]
+                    },
+                    "fontSize": {
+                        "h1": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "display": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "h2": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "mono-stats": ["14px", { "lineHeight": "1.4", "fontWeight": "500" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "label-caps": ["12px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+        .noise-bg {
+            position: relative;
+        }
+        .noise-bg::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 0;
+            border-radius: inherit;
+        }
+        .content-relative { position: relative; z-index: 1; }
+
+        /* Bar Colors */
+        .bar-fcfs { background: linear-gradient(180deg, theme('colors.primary-fixed-dim'), theme('colors.primary-fixed')); }
+        .bar-sjf { background: linear-gradient(180deg, theme('colors.secondary-fixed-dim'), theme('colors.secondary-fixed')); }
+        .bar-rr { background: linear-gradient(180deg, theme('colors.tertiary-fixed-dim'), theme('colors.tertiary-fixed')); }
+        .bar-prio { background: linear-gradient(180deg, theme('colors.outline-variant'), theme('colors.outline')); }
+    </style>
+</head>
+<body class="bg-surface-container-lowest text-on-surface font-body-md antialiased min-h-screen flex flex-col">
+<!-- TopNavBar -->
+<nav class="bg-slate-950/80 backdrop-blur-xl font-inter antialiased tracking-tight docked full-width top-0 sticky z-50 border-b border-white/10 shadow-2xl shadow-cyan-900/20">
+<div class="flex justify-between items-center w-full px-8 h-16 max-w-screen-2xl mx-auto">
+<div class="flex items-center gap-8">
+<div class="text-xl font-bold tracking-tighter text-white bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600">CoreSched</div>
+<div class="hidden md:flex gap-6 items-center">
+<a class="text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all duration-200 active:scale-95 cursor-pointer px-3 py-2 rounded-lg" href="#">Home</a>
+<a class="text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all duration-200 active:scale-95 cursor-pointer px-3 py-2 rounded-lg" href="#">Simulator</a>
+<a class="text-cyan-400 font-semibold border-b-2 border-cyan-400 pb-1 px-3 py-2" href="#">Compare</a>
+<a class="text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all duration-200 active:scale-95 cursor-pointer px-3 py-2 rounded-lg" href="#">Workloads</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="bg-gradient-to-r from-cyan-500 to-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:opacity-90 transition-opacity active:scale-95">Start Simulation</button>
+<button class="text-slate-400 hover:text-slate-200 transition-colors"><span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">settings</span></button>
+<button class="text-slate-400 hover:text-slate-200 transition-colors"><span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">account_circle</span></button>
+</div>
+</div>
+</nav>
+<!-- Main Content -->
+<main class="flex-grow container mx-auto px-container-padding py-xl max-w-screen-2xl">
+<header class="mb-xl">
+<h1 class="font-h1 text-h1 text-on-surface mb-sm">Algorithm Comparison</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Detailed performance analysis across 4 scheduling algorithms for Workload Alpha-7.</p>
+</header>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-lg mb-xl">
+<!-- Grouped Bar Chart Card -->
+<div class="glass-card noise-bg rounded-xl lg:col-span-8 p-lg flex flex-col">
+<div class="content-relative flex-grow">
+<h2 class="font-h2 text-h2 text-on-surface mb-md">Metric Performance Overview</h2>
+<div class="h-[400px] w-full mt-lg relative flex items-end justify-around pb-md border-b border-white/10">
+<!-- Y-Axis Labels -->
+<div class="absolute left-0 top-0 bottom-md flex flex-col justify-between text-on-surface-variant font-mono-stats text-mono-stats text-right pr-sm border-r border-white/10">
+<span>40ms</span>
+<span>30ms</span>
+<span>20ms</span>
+<span>10ms</span>
+<span>0ms</span>
+</div>
+<!-- Metric Group: Avg Waiting Time -->
+<div class="flex flex-col items-center gap-sm ml-12">
+<div class="flex items-end gap-1 h-[320px]">
+<div class="w-8 bar-fcfs rounded-t-sm relative group" style="height: 85%;">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-surface-container text-on-surface font-mono-stats text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">FCFS: 34ms</div>
+</div>
+<div class="w-8 bar-sjf rounded-t-sm relative group" style="height: 35%;">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-surface-container text-on-surface font-mono-stats text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">SJF: 14ms</div>
+<div class="absolute -top-6 left-1/2 -translate-x-1/2 text-yellow-400"><span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">emoji_events</span></div>
+</div>
+<div class="w-8 bar-rr rounded-t-sm relative group" style="height: 60%;">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-surface-container text-on-surface font-mono-stats text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">RR: 24ms</div>
+</div>
+<div class="w-8 bar-prio rounded-t-sm relative group" style="height: 75%;">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-surface-container text-on-surface font-mono-stats text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Prio: 30ms</div>
+</div>
+</div>
+<span class="font-label-caps text-label-caps text-on-surface-variant mt-sm">Avg Wait Time</span>
+</div>
+<!-- Metric Group: Avg Turnaround Time -->
+<div class="flex flex-col items-center gap-sm">
+<div class="flex items-end gap-1 h-[320px]">
+<div class="w-8 bar-fcfs rounded-t-sm" style="height: 95%;"></div>
+<div class="w-8 bar-sjf rounded-t-sm relative" style="height: 45%;">
+<div class="absolute -top-6 left-1/2 -translate-x-1/2 text-yellow-400"><span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">emoji_events</span></div>
+</div>
+<div class="w-8 bar-rr rounded-t-sm" style="height: 70%;"></div>
+<div class="w-8 bar-prio rounded-t-sm" style="height: 85%;"></div>
+</div>
+<span class="font-label-caps text-label-caps text-on-surface-variant mt-sm">Avg Turnaround</span>
+</div>
+<!-- Metric Group: CPU Utilization -->
+<div class="flex flex-col items-center gap-sm">
+<div class="flex items-end gap-1 h-[320px]">
+<div class="w-8 bar-fcfs rounded-t-sm" style="height: 100%;"></div>
+<div class="w-8 bar-sjf rounded-t-sm" style="height: 90%;"></div>
+<div class="w-8 bar-rr rounded-t-sm relative" style="height: 98%;">
+</div>
+<div class="w-8 bar-prio rounded-t-sm" style="height: 95%;"></div>
+</div>
+<span class="font-label-caps text-label-caps text-on-surface-variant mt-sm">CPU Util (%)</span>
+</div>
+</div>
+<!-- Legend -->
+<div class="flex justify-center gap-lg mt-md pt-md">
+<div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-primary-fixed"></div><span class="font-label-caps text-label-caps text-on-surface">FCFS</span></div>
+<div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-secondary-fixed"></div><span class="font-label-caps text-label-caps text-on-surface">SJF</span></div>
+<div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-tertiary-fixed"></div><span class="font-label-caps text-label-caps text-on-surface">RR</span></div>
+<div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-outline"></div><span class="font-label-caps text-label-caps text-on-surface">Priority</span></div>
+</div>
+</div>
+</div>
+<!-- Radar Chart Card Placeholder -->
+<div class="glass-card noise-bg rounded-xl lg:col-span-4 p-lg flex flex-col items-center justify-center">
+<div class="content-relative w-full h-full flex flex-col items-center justify-center">
+<h3 class="font-h2 text-h2 text-on-surface mb-lg text-center w-full">Balance Radar</h3>
+<div class="relative w-64 h-64 border border-white/10 rounded-full flex items-center justify-center">
+<div class="absolute w-48 h-48 border border-white/10 rounded-full"></div>
+<div class="absolute w-32 h-32 border border-white/10 rounded-full"></div>
+<!-- Mock Radar Shape -->
+<svg class="absolute w-full h-full opacity-50" viewbox="0 0 100 100">
+<polygon fill="theme('colors.primary-fixed')" fill-opacity="0.2" points="50,10 90,40 70,90 30,90 10,40" stroke="theme('colors.primary-fixed')" stroke-width="1"></polygon>
+<polygon fill="theme('colors.secondary-fixed')" fill-opacity="0.3" points="50,20 80,45 60,80 40,80 20,45" stroke="theme('colors.secondary-fixed')" stroke-width="1"></polygon>
+</svg>
+<span class="absolute top-0 text-label-caps text-on-surface-variant -translate-y-6">Wait</span>
+<span class="absolute right-0 text-label-caps text-on-surface-variant translate-x-8">Turnaround</span>
+<span class="absolute bottom-0 text-label-caps text-on-surface-variant translate-y-6">Response</span>
+<span class="absolute left-0 text-label-caps text-on-surface-variant -translate-x-8">Throughput</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Summary Table -->
+<div class="glass-card noise-bg rounded-xl p-lg overflow-hidden">
+<div class="content-relative">
+<h3 class="font-h2 text-h2 text-on-surface mb-md">Metrics Summary</h3>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-white/10">
+<th class="font-label-caps text-label-caps text-on-surface-variant py-sm px-md">Metric</th>
+<th class="font-label-caps text-label-caps text-on-surface-variant py-sm px-md">FCFS</th>
+<th class="font-label-caps text-label-caps text-on-surface-variant py-sm px-md flex items-center gap-1">SJF <span class="material-symbols-outlined text-yellow-400 text-xs" style="font-variation-settings: 'FILL' 1;">emoji_events</span></th>
+<th class="font-label-caps text-label-caps text-on-surface-variant py-sm px-md">RR (q=4)</th>
+<th class="font-label-caps text-label-caps text-on-surface-variant py-sm px-md">Priority</th>
+</tr>
+</thead>
+<tbody class="font-mono-stats text-mono-stats text-on-surface">
+<tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
+<td class="py-md px-md text-on-surface-variant font-body-md">Avg Waiting Time</td>
+<td class="py-md px-md">34.2 ms</td>
+<td class="py-md px-md text-secondary-fixed font-bold">14.1 ms</td>
+<td class="py-md px-md">24.5 ms</td>
+<td class="py-md px-md">30.8 ms</td>
+</tr>
+<tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
+<td class="py-md px-md text-on-surface-variant font-body-md">Avg Turnaround Time</td>
+<td class="py-md px-md">42.5 ms</td>
+<td class="py-md px-md text-secondary-fixed font-bold">22.4 ms</td>
+<td class="py-md px-md">32.8 ms</td>
+<td class="py-md px-md">39.1 ms</td>
+</tr>
+<tr class="hover:bg-white/5 transition-colors">
+<td class="py-md px-md text-on-surface-variant font-body-md">CPU Utilization</td>
+<td class="py-md px-md text-primary-fixed font-bold">100%</td>
+<td class="py-md px-md">92%</td>
+<td class="py-md px-md">98%</td>
+<td class="py-md px-md">95%</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-slate-950 text-cyan-400 font-inter text-xs tracking-wider uppercase font-black text-slate-200 w-full py-12 px-8 border-t border-white/5 mt-auto">
+<div class="flex flex-col md:flex-row justify-between items-center gap-6 max-w-screen-2xl mx-auto w-full">
+<div class="opacity-80 hover:opacity-100 transition-opacity">
+                © 2024 CoreSched Simulator. Engineered for precision.
+            </div>
+<div class="flex gap-6">
+<a class="text-slate-500 hover:text-cyan-400 transition-colors opacity-80 hover:opacity-100" href="#">Documentation</a>
+<a class="text-slate-500 hover:text-cyan-400 transition-colors opacity-80 hover:opacity-100" href="#">GitHub</a>
+<a class="text-slate-500 hover:text-cyan-400 transition-colors opacity-80 hover:opacity-100" href="#">Privacy Policy</a>
+<a class="text-slate-500 hover:text-cyan-400 transition-colors opacity-80 hover:opacity-100" href="#">Algorithm Guide</a>
+</div>
+</div>
+</footer>
+</body></html>
