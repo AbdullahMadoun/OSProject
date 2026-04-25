@@ -53,13 +53,15 @@ priority scheduling.
 The earlier machine-learning prediction idea has been removed from the Phase 2
 scope. The current report therefore focuses only on the core operating-system
 simulation: workload parsing, scheduler execution, timeline generation,
-metrics, visualization, CSV export, and tests.
+metrics, visualization, CSV export, browser-based interaction, process logging,
+and tests.
 
 \section{Implemented So Far}
 
-The core simulator is approximately 65--70\% complete for the current
-non-ML project scope. The main scheduling functionality is working, while final
-submission polish, cleanup, and broader validation still remain.
+The core simulator and supporting visualization tools are approximately
+70--75\% complete for the current non-ML project scope. The main scheduling
+functionality is working, while final submission polish, cleanup, and broader
+validation still remain.
 
 \begin{longtable}{p{0.29\linewidth}p{0.16\linewidth}p{0.45\linewidth}}
 \toprule
@@ -88,6 +90,14 @@ Terminal visualization & Complete & Prints Gantt charts, per-process tables,
 metric summaries, and all-algorithm comparison tables. \\
 CSV export & Complete & Exports one metrics row per algorithm run for external
 analysis or dashboard generation. \\
+Browser dashboard & Implemented & Provides an interactive single-page
+dashboard in \texttt{dashboard/} with editable workloads, client-side scheduler
+implementations, Gantt charts, metric cards, and algorithm comparison. \\
+CSV dashboard generator & Implemented & Converts exported scheduler CSV files
+into a self-contained HTML dashboard for sharing or offline viewing. \\
+OS process logger & Implemented & Samples local macOS/Windows process CPU
+activity, converts active processes into simulator workloads, and can run the
+simulator against that observed workload. \\
 C unit tests & Complete for main cases & Unit tests cover process reset,
 queues, input parsing, each scheduler, and metrics formulas. Current local run:
 123/123 assertions passed. \\
@@ -152,6 +162,11 @@ Each scheduler updates process timing fields and appends execution intervals to
 the simulation result. The metrics module then computes aggregate and
 per-process measurements, and the visualization module prints the Gantt chart,
 metric table, and comparison output.
+
+In addition to the C command-line flow, the project now includes a browser
+dashboard under \texttt{dashboard/}. That dashboard reimplements the same
+scheduling rules in client-side JavaScript so users can edit workloads and view
+Gantt charts and comparison metrics without compiling the C program.
 
 \section{Working System Screenshots}
 
@@ -270,8 +285,8 @@ Total: 123/123 assertions passed
   \item Remove or isolate stale ML-related files and command-line references so
   the final codebase matches the non-ML project scope.
 
-  \item Add final screenshots as image files if required by the instructor, or
-  keep terminal captures if text-based screenshots are accepted.
+  \item Add final screenshots for both the terminal simulator and browser
+  dashboard if image-based screenshots are required by the instructor.
 
   \item Add more edge-case tests for context-switch overhead, empty/invalid
   workloads, large workloads near \texttt{MAX\_PROCESSES}, and comparison-mode
@@ -286,8 +301,8 @@ Total: 123/123 assertions passed
   \item Run at least one documented AFL++ baseline campaign for the input
   parser and queue harness, then save the campaign summary.
 
-  \item Update \texttt{README.md} so the build, run, testing, and project
-  status sections describe only the final scheduler simulator.
+  \item Keep \texttt{README.md}, \texttt{AGENTS.md}, and this report
+  synchronized as final cleanup changes are made.
 
   \item Prepare the final code submission as a GitHub repository or ZIP with
   source files, headers, tests, workloads, Makefile, and this report.
@@ -305,7 +320,11 @@ tests/                 C unit tests
 workloads/             Sample scheduler workloads
 fuzz/                  AFL++ fuzzing harnesses and seed corpora
 scripts/fuzz/          Fuzzing helper scripts
+dashboard/             Interactive browser dashboard
+ml/visualize_runs.py   CSV-to-HTML dashboard generator
+scripts/os_process_logger.py  Local process sampler and workload generator
 reports/               Phase reports
+DASHBOARD_SPEC.md      Browser dashboard build specification
 Makefile               Build, test, and fuzz commands
 \end{lstlisting}
 
