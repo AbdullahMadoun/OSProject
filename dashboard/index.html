@@ -254,10 +254,21 @@
               </div>
               <input id="quantumInput" class="w-full bg-surface border border-outline-variant/50 rounded-md px-3 py-2 font-mono-stats text-mono-stats text-on-surface outline-none focus:border-primary-container focus:bg-surface-container-highest transition-all" type="number" min="1" max="20" step="1" value="2">
             </div>
+            <div id="ctxPanel" class="flex flex-col gap-2">
+              <div class="flex justify-between items-end">
+                <label class="font-label-caps text-label-caps text-on-surface-variant uppercase" for="ctxInput">Context Switch Overhead</label>
+                <span id="ctxValue" class="font-mono-stats text-mono-stats text-primary-fixed">0 ms</span>
+              </div>
+              <input id="ctxInput" class="w-full bg-surface border border-outline-variant/50 rounded-md px-3 py-2 font-mono-stats text-mono-stats text-on-surface outline-none focus:border-primary-container focus:bg-surface-container-highest transition-all" type="number" min="0" max="20" step="1" value="0">
+            </div>
             <button id="runSimulationButton" class="w-full bg-primary-container text-on-primary-container font-h2 text-[18px] font-semibold px-8 py-4 rounded-xl hover:shadow-[0_0_25px_rgba(0,212,255,0.3)] hover:bg-tertiary-container hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-3 relative overflow-hidden group" type="button">
               <span class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></span>
               <span class="material-symbols-outlined text-[24px] relative z-10" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
               <span class="relative z-10">Run Simulation</span>
+            </button>
+            <button id="runAllButton" class="w-full bg-surface-container-low text-on-surface font-h2 text-[17px] font-semibold px-8 py-3 rounded-xl border border-outline-variant/50 hover:bg-surface-container-high hover:border-primary-container/40 hover:text-primary transition-all duration-300 flex items-center justify-center gap-3" type="button">
+              <span class="material-symbols-outlined text-[22px]">view_array</span>
+              <span>Run All Algorithms</span>
             </button>
           </section>
         </aside>
@@ -318,8 +329,11 @@
         </div>
         <div class="glass-card rounded-full p-1 flex items-center gap-1 shadow-lg shadow-black/50">
           <button id="playbackPrevious" class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-white/5 transition-colors" type="button" title="Previous Step"><span class="material-symbols-outlined">skip_previous</span></button>
-          <button id="playbackPlay" class="w-12 h-12 rounded-full flex items-center justify-center bg-primary-container text-on-primary-container hover:bg-primary shadow-[0_0_20px_rgba(0,212,255,0.3)] transition-all" type="button" title="Play"><span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">play_arrow</span></button>
+          <button id="playbackPlay" class="w-12 h-12 rounded-full flex items-center justify-center bg-primary-container text-on-primary-container hover:bg-primary shadow-[0_0_20px_rgba(0,212,255,0.3)] transition-all" type="button" title="Play">
+            <span id="playbackPlayIcon" class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+          </button>
           <button id="playbackNext" class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-white/5 transition-colors" type="button" title="Next Step"><span class="material-symbols-outlined">skip_next</span></button>
+          <span id="playbackClock" class="font-mono-stats text-mono-stats text-on-surface-variant px-2 min-w-[82px] text-center">0 / 0 ms</span>
           <div class="w-px h-6 bg-white/10 mx-2"></div>
           <button id="playbackReset" class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:text-error hover:bg-error/10 transition-colors" type="button" title="Reset"><span class="material-symbols-outlined">replay</span></button>
         </div>

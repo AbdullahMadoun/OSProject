@@ -1,6 +1,9 @@
 (function () {
   "use strict";
 
+  const PID_IDLE = -1;
+  const PID_OVERHEAD = -2;
+
   const ALGORITHMS = {
     fcfs: { key: "fcfs", label: "FCFS", longLabel: "First Come First Served" },
     sjf: { key: "sjf", label: "SJF", longLabel: "Shortest Job First" },
@@ -25,22 +28,42 @@
     return a.pid - b.pid;
   }
 
-  function pushSegment(timeline, pid, start, end, mergeAdjacent) {
+  function segmentKindFromPid(pid) {
+    if (pid === PID_IDLE) return "idle";
+    if (pid === PID_OVERHEAD) return "overhead";
+    return "process";
+  }
+
+  function pushSegment(timeline, pid, start, end, mergeAdjacent, kind) {
     if (end <= start) return;
+    const segmentKind = kind || segmentKindFromPid(pid);
     const last = timeline[timeline.length - 1];
-    if (mergeAdjacent && last && last.pid === pid && last.end === start) {
+    if (mergeAdjacent && last && last.pid === pid &&
+        last.kind === segmentKind && last.end === start) {
       last.end = end;
       last.duration = last.end - last.start;
       return;
     }
-    timeline.push({ pid, start, end, duration: end - start });
+    timeline.push({ pid, kind: segmentKind, start, end, duration: end - start });
+  }
+
+  function applyContextOverhead(timeline, currentTime, ctxOverhead) {
+    if (ctxOverhead <= 0) return currentTime;
+    const start = currentTime;
+    const end = currentTime + ctxOverhead;
+    pushSegment(timeline, PID_OVERHEAD, start, end, true, "overhead");
+    return end;
   }
 
   function finalizeResult(algorithm, processes, timeline, contextSwitches) {
     const totalTime = timeline.reduce((max, item) => Math.max(max, item.end), 0);
     const idleTime = timeline.reduce((total, item) => {
-      return total + (item.pid === -1 ? item.duration : 0);
+      return total + (item.kind === "idle" ? item.duration : 0);
     }, 0);
+    const overheadTime = timeline.reduce((total, item) => {
+      return total + (item.kind === "overhead" ? item.duration : 0);
+    }, 0);
+    const busyTime = Math.max(0, totalTime - idleTime - overheadTime);
 
     return {
       algorithm,
@@ -59,35 +82,52 @@
         .sort((a, b) => a.pid - b.pid),
       contextSwitches,
       totalTime,
-      idleTime
+      idleTime,
+      overheadTime,
+      busyTime
     };
   }
 
-  function scheduleFcfs(inputProcesses) {
+  function scheduleFcfs(inputProcesses, options) {
+    const config = options || {};
+    const ctxOverhead = Math.max(0, Number(config.ctxOverhead) || 0);
     const processes = cloneProcesses(inputProcesses).sort(byArrivalThenPid);
     const timeline = [];
+    let contextSwitches = 0;
+    let lastDispatchedPid = null;
     let currentTime = 0;
 
     processes.forEach((proc) => {
       if (currentTime < proc.arrival) {
-        pushSegment(timeline, -1, currentTime, proc.arrival, true);
+        pushSegment(timeline, PID_IDLE, currentTime, proc.arrival, true, "idle");
         currentTime = proc.arrival;
       }
+
+      if (lastDispatchedPid !== null && lastDispatchedPid !== proc.pid) {
+        contextSwitches += 1;
+        currentTime = applyContextOverhead(timeline, currentTime, ctxOverhead);
+      }
+
       proc.start = currentTime;
       currentTime += proc.burst;
       proc.remaining = 0;
       proc.completion = currentTime;
       pushSegment(timeline, proc.pid, proc.start, proc.completion, true);
+      lastDispatchedPid = proc.pid;
     });
 
-    return finalizeResult("fcfs", processes, timeline, 0);
+    return finalizeResult("fcfs", processes, timeline, contextSwitches);
   }
 
-  function scheduleSjf(inputProcesses) {
+  function scheduleSjf(inputProcesses, options) {
+    const config = options || {};
+    const ctxOverhead = Math.max(0, Number(config.ctxOverhead) || 0);
     const processes = cloneProcesses(inputProcesses);
     const order = processes.slice().sort(byArrivalThenPid);
     const ready = [];
     const timeline = [];
+    let contextSwitches = 0;
+    let lastDispatchedPid = null;
     let currentTime = 0;
     let nextIndex = 0;
     let completed = 0;
@@ -101,7 +141,7 @@
       if (ready.length === 0) {
         const nextArrival = order[nextIndex].arrival;
         if (currentTime < nextArrival) {
-          pushSegment(timeline, -1, currentTime, nextArrival, true);
+          pushSegment(timeline, PID_IDLE, currentTime, nextArrival, true, "idle");
           currentTime = nextArrival;
         }
         continue;
@@ -114,22 +154,31 @@
       });
 
       const proc = ready.shift();
+      if (lastDispatchedPid !== null && lastDispatchedPid !== proc.pid) {
+        contextSwitches += 1;
+        currentTime = applyContextOverhead(timeline, currentTime, ctxOverhead);
+      }
       proc.start = currentTime;
       currentTime += proc.burst;
       proc.remaining = 0;
       proc.completion = currentTime;
       pushSegment(timeline, proc.pid, proc.start, proc.completion, true);
+      lastDispatchedPid = proc.pid;
       completed += 1;
     }
 
-    return finalizeResult("sjf", processes, timeline, 0);
+    return finalizeResult("sjf", processes, timeline, contextSwitches);
   }
 
-  function schedulePriority(inputProcesses) {
+  function schedulePriority(inputProcesses, options) {
+    const config = options || {};
+    const ctxOverhead = Math.max(0, Number(config.ctxOverhead) || 0);
     const processes = cloneProcesses(inputProcesses);
     const order = processes.slice().sort(byArrivalThenPid);
     const ready = [];
     const timeline = [];
+    let contextSwitches = 0;
+    let lastDispatchedPid = null;
     let currentTime = 0;
     let nextIndex = 0;
     let completed = 0;
@@ -143,7 +192,7 @@
       if (ready.length === 0) {
         const nextArrival = order[nextIndex].arrival;
         if (currentTime < nextArrival) {
-          pushSegment(timeline, -1, currentTime, nextArrival, true);
+          pushSegment(timeline, PID_IDLE, currentTime, nextArrival, true, "idle");
           currentTime = nextArrival;
         }
         continue;
@@ -156,18 +205,25 @@
       });
 
       const proc = ready.shift();
+      if (lastDispatchedPid !== null && lastDispatchedPid !== proc.pid) {
+        contextSwitches += 1;
+        currentTime = applyContextOverhead(timeline, currentTime, ctxOverhead);
+      }
       proc.start = currentTime;
       currentTime += proc.burst;
       proc.remaining = 0;
       proc.completion = currentTime;
       pushSegment(timeline, proc.pid, proc.start, proc.completion, true);
+      lastDispatchedPid = proc.pid;
       completed += 1;
     }
 
-    return finalizeResult("priority", processes, timeline, 0);
+    return finalizeResult("priority", processes, timeline, contextSwitches);
   }
 
-  function scheduleRoundRobin(inputProcesses, quantum) {
+  function scheduleRoundRobin(inputProcesses, quantum, options) {
+    const config = options || {};
+    const ctxOverhead = Math.max(0, Number(config.ctxOverhead) || 0);
     const safeQuantum = Math.max(1, Number(quantum) || 1);
     const processes = cloneProcesses(inputProcesses);
     const order = processes.slice().sort(byArrivalThenPid);
@@ -177,7 +233,7 @@
     let nextIndex = 0;
     let completed = 0;
     let contextSwitches = 0;
-    let lastPid = -1;
+    let lastDispatchedPid = null;
 
     function enqueueArrivals() {
       while (nextIndex < order.length && order[nextIndex].arrival <= currentTime) {
@@ -192,18 +248,19 @@
       if (ready.length === 0) {
         const nextArrival = order[nextIndex].arrival;
         if (currentTime < nextArrival) {
-          pushSegment(timeline, -1, currentTime, nextArrival, true);
+          pushSegment(timeline, PID_IDLE, currentTime, nextArrival, true, "idle");
           currentTime = nextArrival;
         }
         continue;
       }
 
-      const nextPid = ready[0].pid;
-      if (lastPid >= 0 && lastPid !== nextPid) {
+      const proc = ready.shift();
+      if (lastDispatchedPid !== null && lastDispatchedPid !== proc.pid) {
         contextSwitches += 1;
+        currentTime = applyContextOverhead(timeline, currentTime, ctxOverhead);
+        enqueueArrivals();
       }
 
-      const proc = ready.shift();
       if (proc.start === null) {
         proc.start = currentTime;
       }
@@ -223,7 +280,7 @@
         completed += 1;
       }
 
-      lastPid = proc.pid;
+      lastDispatchedPid = proc.pid;
     }
 
     return finalizeResult("rr", processes, timeline, contextSwitches);
@@ -231,10 +288,10 @@
 
   function runAlgorithm(algorithm, processes, options) {
     const config = options || {};
-    if (algorithm === "fcfs") return scheduleFcfs(processes);
-    if (algorithm === "sjf") return scheduleSjf(processes);
-    if (algorithm === "rr") return scheduleRoundRobin(processes, config.quantum);
-    if (algorithm === "priority") return schedulePriority(processes);
+    if (algorithm === "fcfs") return scheduleFcfs(processes, config);
+    if (algorithm === "sjf") return scheduleSjf(processes, config);
+    if (algorithm === "rr") return scheduleRoundRobin(processes, config.quantum, config);
+    if (algorithm === "priority") return schedulePriority(processes, config);
     throw new Error(`Unsupported algorithm: ${algorithm}`);
   }
 
@@ -246,6 +303,8 @@
 
   window.SchedulerCore = {
     ALGORITHMS,
+    PID_IDLE,
+    PID_OVERHEAD,
     runAlgorithm,
     runAllAlgorithms
   };

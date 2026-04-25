@@ -27,7 +27,11 @@
 
     const totalTime = result.totalTime || 0;
     const idleTime = result.idleTime || 0;
-    const utilization = totalTime > 0 ? ((totalTime - idleTime) / totalTime) * 100 : 0;
+    const overheadTime = result.overheadTime || 0;
+    const busyTime = result.busyTime != null
+      ? result.busyTime
+      : Math.max(0, totalTime - idleTime - overheadTime);
+    const utilization = totalTime > 0 ? (busyTime / totalTime) * 100 : 0;
     const throughput = totalTime > 0 ? processMetrics.length / totalTime : 0;
 
     return {
@@ -36,6 +40,8 @@
       longLabel: result.longLabel,
       totalTime,
       idleTime,
+      overheadTime,
+      busyTime,
       contextSwitches: result.contextSwitches || 0,
       processMetrics,
       avgWaiting: average(processMetrics.map((proc) => proc.waiting)),

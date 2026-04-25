@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
   "use strict";
 
   const PRESETS = {
@@ -29,7 +29,12 @@
   const state = {
     selectedAlgorithm: "fcfs",
     lastResults: [],
-    revealObserver: null
+    revealObserver: null,
+    playbackTime: 0,
+    playbackMaxTime: 0,
+    playbackTimer: null,
+    isPlaybackRunning: false,
+    ganttLabelBase: ""
   };
 
   const els = {};
@@ -41,13 +46,22 @@
       "addProcessButton",
       "clearProcessButton",
       "runSimulationButton",
+      "runAllButton",
       "quantumPanel",
       "quantumInput",
       "quantumValue",
+      "ctxInput",
+      "ctxValue",
       "validationMessage",
       "ganttContainer",
       "ganttLegend",
       "ganttAlgorithmLabel",
+      "playbackPrevious",
+      "playbackPlay",
+      "playbackPlayIcon",
+      "playbackNext",
+      "playbackReset",
+      "playbackClock",
       "metricsAlgorithmLabel",
       "comparisonSection",
       "comparisonPlaceholder",
@@ -165,6 +179,10 @@
     els.validationMessage.textContent = messages.join(" ");
     els.runSimulationButton.disabled = !isValid;
     els.runSimulationButton.classList.toggle("run-disabled", !isValid);
+    if (els.runAllButton) {
+      els.runAllButton.disabled = !isValid;
+      els.runAllButton.classList.toggle("run-disabled", !isValid);
+    }
     return isValid;
   }
 
@@ -203,8 +221,21 @@
     els.sampleSelect.value = key;
   }
 
+  function stopPlayback() {
+    if (state.playbackTimer) {
+      clearInterval(state.playbackTimer);
+      state.playbackTimer = null;
+    }
+    state.isPlaybackRunning = false;
+    if (els.playbackPlayIcon) {
+      els.playbackPlayIcon.textContent = "play_arrow";
+    }
+  }
+
   function setAlgorithm(algorithm) {
     state.selectedAlgorithm = algorithm;
+    stopPlayback();
+
     document.querySelectorAll("[data-algorithm]").forEach((button) => {
       const isActive = button.dataset.algorithm === algorithm;
       button.classList.toggle("is-active", isActive);
@@ -222,6 +253,14 @@
     els.quantumInput.value = quantum;
     els.quantumValue.textContent = `${quantum} ms`;
     return quantum;
+  }
+
+  function getCtxOverhead() {
+    const value = parseInteger(els.ctxInput.value);
+    const overhead = Math.min(20, Math.max(0, value || 0));
+    els.ctxInput.value = overhead;
+    els.ctxValue.textContent = `${overhead} ms`;
+    return overhead;
   }
 
   function updateComparisonVisibility(hasAllResults) {
@@ -262,30 +301,115 @@
 
   function updateMetrics(result, mode) {
     const metrics = window.DashboardMetrics.computeMetrics(result);
-    const qualifier = mode === "all" ? `${result.label} baseline · compare all below` : result.longLabel;
+    const qualifier = mode === "all" ? `${result.label} baseline - compare all below` : result.longLabel;
     els.metricsAlgorithmLabel.textContent = qualifier;
     updateMetricsCards(metrics);
     updateMetricsTable(metrics);
+  }
+
+  function updatePlaybackUI() {
+    const shownTime = Math.max(0, Math.min(state.playbackMaxTime, Math.floor(state.playbackTime)));
+
+    if (els.playbackClock) {
+      els.playbackClock.textContent = `${shownTime} / ${state.playbackMaxTime} ms`;
+    }
+
+    if (els.playbackPlayIcon) {
+      els.playbackPlayIcon.textContent = state.isPlaybackRunning ? "pause" : "play_arrow";
+    }
+
+    const labelSuffix = ` - Playback ${Math.floor(shownTime)}/${state.playbackMaxTime} ms`;
+    els.ganttAlgorithmLabel.textContent = `${state.ganttLabelBase}${labelSuffix}`;
+  }
+
+  function renderPlaybackFrame() {
+    if (!state.lastResults.length) return;
+    const mode = state.selectedAlgorithm === "all" ? "all" : "single";
+    window.GanttRenderer.renderGanttCharts(
+      state.lastResults,
+      els.ganttContainer,
+      els.ganttLegend,
+      mode,
+      state.playbackTime
+    );
+    updatePlaybackUI();
+    observeRevealElements();
+  }
+
+  function setPlaybackTime(timeValue) {
+    const clamped = Math.max(0, Math.min(state.playbackMaxTime, Number(timeValue) || 0));
+    state.playbackTime = clamped;
+    renderPlaybackFrame();
+  }
+
+  function startPlayback() {
+    if (!state.lastResults.length) return;
+
+    if (state.playbackTime >= state.playbackMaxTime) {
+      state.playbackTime = 0;
+    }
+
+    stopPlayback();
+    state.isPlaybackRunning = true;
+    updatePlaybackUI();
+    state.playbackTimer = setInterval(() => {
+      if (state.playbackTime >= state.playbackMaxTime) {
+        stopPlayback();
+        updatePlaybackUI();
+        return;
+      }
+      state.playbackTime += 1;
+      renderPlaybackFrame();
+    }, 420);
+  }
+
+  function togglePlayback() {
+    if (!state.lastResults.length) return;
+    if (state.isPlaybackRunning) {
+      stopPlayback();
+      updatePlaybackUI();
+      return;
+    }
+    startPlayback();
+  }
+
+  function stepPlayback(delta) {
+    if (!state.lastResults.length) return;
+    stopPlayback();
+    setPlaybackTime(state.playbackTime + delta);
+  }
+
+  function resetPlayback() {
+    if (!state.lastResults.length) return;
+    stopPlayback();
+    setPlaybackTime(0);
   }
 
   function runSimulation() {
     const processes = getValidatedProcesses();
     if (!processes) return;
 
+    stopPlayback();
+
     const quantum = getQuantum();
+    const ctxOverhead = getCtxOverhead();
     const mode = state.selectedAlgorithm;
+    const options = { quantum, ctxOverhead };
+
     const results = mode === "all"
-      ? window.SchedulerCore.runAllAlgorithms(processes, { quantum })
-      : [window.SchedulerCore.runAlgorithm(mode, processes, { quantum })];
+      ? window.SchedulerCore.runAllAlgorithms(processes, options)
+      : [window.SchedulerCore.runAlgorithm(mode, processes, options)];
 
     state.lastResults = results;
+    state.playbackMaxTime = results.reduce((max, result) => Math.max(max, result.totalTime), 0);
+    state.playbackTime = state.playbackMaxTime;
+
     const primaryResult = results[0];
+    state.ganttLabelBase = mode === "all"
+      ? `All algorithms - RR q=${quantum} - CS overhead=${ctxOverhead}ms`
+      : `${primaryResult.longLabel}${primaryResult.algorithm === "rr" ? ` - q=${quantum}` : ""} - CS overhead=${ctxOverhead}ms`;
 
-    els.ganttAlgorithmLabel.textContent = mode === "all"
-      ? `All algorithms · RR q=${quantum}`
-      : `${primaryResult.longLabel}${primaryResult.algorithm === "rr" ? ` · q=${quantum}` : ""}`;
-
-    window.GanttRenderer.renderGanttCharts(results, els.ganttContainer, els.ganttLegend, mode === "all" ? "all" : "single");
+    renderPlaybackFrame();
     updateMetrics(primaryResult, mode === "all" ? "all" : "single");
 
     if (mode === "all") {
@@ -296,6 +420,12 @@
     }
 
     observeRevealElements();
+  }
+
+  function runAllAlgorithmsNow() {
+    if (!validateProcessTable()) return;
+    setAlgorithm("all");
+    runSimulation();
   }
 
   function observeRevealElements() {
@@ -332,7 +462,16 @@
     els.clearProcessButton.addEventListener("click", clearProcesses);
     els.sampleSelect.addEventListener("change", (event) => setPreset(event.target.value));
     els.runSimulationButton.addEventListener("click", runSimulation);
+    if (els.runAllButton) {
+      els.runAllButton.addEventListener("click", runAllAlgorithmsNow);
+    }
     els.quantumInput.addEventListener("input", getQuantum);
+    els.ctxInput.addEventListener("input", getCtxOverhead);
+
+    els.playbackPlay.addEventListener("click", togglePlayback);
+    els.playbackPrevious.addEventListener("click", () => stepPlayback(-1));
+    els.playbackNext.addEventListener("click", () => stepPlayback(1));
+    els.playbackReset.addEventListener("click", resetPlayback);
 
     document.querySelectorAll("[data-algorithm]").forEach((button) => {
       button.addEventListener("click", () => setAlgorithm(button.dataset.algorithm));
@@ -363,6 +502,7 @@
     renderProcessRows(clonePreset("basic"));
     setAlgorithm("fcfs");
     getQuantum();
+    getCtxOverhead();
     observeRevealElements();
     runSimulation();
   }
