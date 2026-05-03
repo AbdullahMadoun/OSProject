@@ -32,12 +32,15 @@ void sched_priority(Process *procs, int n, const SimConfig *cfg, SimResult *r)
     int next_idx = 0;
     int completed = 0;
     int current_time = 0;
+    int overhead = 0;
+    int last_pid = -1;
     int i;
-
-    (void)cfg;
 
     if (procs == NULL || r == NULL || n <= 0) {
         return;
+    }
+    if (cfg != NULL) {
+        overhead = cfg->ctx_overhead;
     }
 
     for (i = 0; i < n; i++) {
@@ -67,6 +70,12 @@ void sched_priority(Process *procs, int n, const SimConfig *cfg, SimResult *r)
             Process *cur = heap_extract(&ready);
             int end_time;
 
+            if (last_pid >= 0 && last_pid != cur->pid && overhead > 0) {
+                sim_gantt_append(r, -1, current_time,
+                                 current_time + overhead);
+                current_time += overhead;
+            }
+
             cur->state = STATE_RUNNING;
             if (cur->sim_start_time == -1) {
                 cur->sim_start_time = current_time;
@@ -79,6 +88,7 @@ void sched_priority(Process *procs, int n, const SimConfig *cfg, SimResult *r)
             cur->remaining_time = 0;
             cur->sim_completion_time = current_time;
             cur->state = STATE_TERMINATED;
+            last_pid = cur->pid;
             completed++;
         }
     }
