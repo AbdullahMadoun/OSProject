@@ -65,10 +65,39 @@ static void suite_sjf_tiebreak(void)
     mu_assert_int_eq("pid3 last", 10, p[0].sim_start_time);
 }
 
+static void suite_sjf_ctx_overhead(void)
+{
+    /*
+     * Two processes, both at time 0.  P1 has shorter burst so it goes first.
+     * With overhead=2 a 2-tick idle gap separates P1 and P2.
+     *
+     * Expected timeline:  [P1 0-3] [idle 3-5] [P2 5-10]
+     */
+    Process p[2];
+    SimConfig cfg = {0, 2};
+    SimResult r;
+    Metrics m;
+
+    process_init(&p[0], 1, 0, 3, 0);
+    process_init(&p[1], 2, 0, 5, 0);
+
+    sim_result_init(&r);
+    sched_sjf(p, 2, &cfg, &r);
+    sim_finalize(&r);
+    metrics_compute(p, 2, &r, &m);
+
+    mu_assert_int_eq("P1 starts at 0", 0, p[0].sim_start_time);
+    mu_assert_int_eq("P1 done at 3", 3, p[0].sim_completion_time);
+    mu_assert_int_eq("P2 starts at 5", 5, p[1].sim_start_time);
+    mu_assert_int_eq("P2 done at 10", 10, p[1].sim_completion_time);
+    mu_assert_int_eq("idle includes overhead", 2, r.idle_time);
+}
+
 int main(void)
 {
     mu_suite(suite_sjf_textbook);
     mu_suite(suite_sjf_nonpreemptive);
     mu_suite(suite_sjf_tiebreak);
+    mu_suite(suite_sjf_ctx_overhead);
     mu_summary();
 }

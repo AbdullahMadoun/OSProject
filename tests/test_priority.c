@@ -46,9 +46,38 @@ static void suite_priority_tiebreak(void)
     mu_assert_int_eq("lower pid first", 0, p[1].sim_start_time);
 }
 
+static void suite_priority_ctx_overhead(void)
+{
+    /*
+     * P2 (priority 1) runs first, then P1 (priority 3).
+     * With overhead=1 a 1-tick idle gap separates them.
+     *
+     * Expected timeline:  [P2 0-4] [idle 4-5] [P1 5-9]
+     */
+    Process p[2];
+    SimConfig cfg = {0, 1};
+    SimResult r;
+    Metrics m;
+
+    process_init(&p[0], 1, 0, 4, 3);
+    process_init(&p[1], 2, 0, 4, 1);
+
+    sim_result_init(&r);
+    sched_priority(p, 2, &cfg, &r);
+    sim_finalize(&r);
+    metrics_compute(p, 2, &r, &m);
+
+    mu_assert_int_eq("P2 starts at 0", 0, p[1].sim_start_time);
+    mu_assert_int_eq("P2 done at 4", 4, p[1].sim_completion_time);
+    mu_assert_int_eq("P1 starts at 5", 5, p[0].sim_start_time);
+    mu_assert_int_eq("P1 done at 9", 9, p[0].sim_completion_time);
+    mu_assert_int_eq("idle includes overhead", 1, r.idle_time);
+}
+
 int main(void)
 {
     mu_suite(suite_priority_textbook);
     mu_suite(suite_priority_tiebreak);
+    mu_suite(suite_priority_ctx_overhead);
     mu_summary();
 }
