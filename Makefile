@@ -37,10 +37,23 @@ TEST_BINS := \
 	$(TEST_BIN_DIR)/test_priority \
 	$(TEST_BIN_DIR)/test_metrics
 
-.PHONY: all clean test test-c py-tests
+.PHONY: all clean test test-c py-tests help
 .PHONY: fuzz-build fuzz-build-asan fuzz-build-fast
 .PHONY: fuzz-input fuzz-queue fuzz-cmin fuzz-tmin
 .PHONY: fuzz-baseline-input fuzz-baseline-queue
+
+help:
+	@echo "Targets:"
+	@echo "  all                  Build the cpu_scheduler binary"
+	@echo "  test-c               Compile and run C unit tests"
+	@echo "  test                 Run C and Python tests"
+	@echo "  py-tests             Run Python tests only"
+	@echo "  clean                Remove built binaries and caches"
+	@echo "  fuzz-build           Build AFL++ instrumented harnesses (requires AFL++)"
+	@echo "  fuzz-input           Fuzz the workload parser"
+	@echo "  fuzz-queue           Fuzz the queue implementation"
+	@echo "  fuzz-baseline-input  Run 10-min input fuzzing campaign"
+	@echo "  fuzz-baseline-queue  Run 10-min queue fuzzing campaign"
 
 all: $(BIN)
 
