@@ -18,6 +18,7 @@ and memory-safety evidence.
 Implemented:
 
 - FCFS, non-preemptive SJF, Round Robin, and non-preemptive priority scheduling
+- context-switch overhead (`-o`) supported by all four schedulers
 - workload parser for built-in samples and custom files
 - deterministic tie-breaking by arrival time and PID where applicable
 - Gantt timeline generation
@@ -37,7 +38,6 @@ Remaining:
 - add final screenshot assets or captured terminal images if required
 - run and archive Valgrind or sanitizer memory checks
 - run and archive longer AFL++ fuzz campaigns
-- standardize context-switch overhead semantics across all algorithms
 - add more edge-case tests near `MAX_PROCESSES` and CSV comparison export
 
 ## Quick Start
@@ -48,6 +48,7 @@ make
 make test-c
 ./cpu_scheduler -s basic -a all
 ./cpu_scheduler -f workloads/sample_rr.txt -a rr -q 4
+./cpu_scheduler -f workloads/sample_mixed.txt -a all
 ./cpu_scheduler -s basic -a all -e results.csv
 python3 scripts/visualize_runs.py results.csv -o results.html
 ```

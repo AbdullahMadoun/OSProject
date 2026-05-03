@@ -73,8 +73,9 @@ make fuzz-baseline-queue
   breaks.
 - Round Robin uses a FIFO ready queue and requeues unfinished processes after
   adding arrivals that became ready during the current quantum.
-- `cfg->ctx_overhead` is currently applied by FCFS and RR. SJF and priority do
-  not yet use it.
+- `cfg->ctx_overhead` is applied by all four schedulers. An idle Gantt segment
+  of length `ctx_overhead` is inserted whenever execution switches to a
+  different PID.
 
 ## File Map
 
@@ -83,7 +84,7 @@ make fuzz-baseline-queue
 - `src/schedulers/`: FCFS, SJF, Round Robin, and priority algorithms.
 - `tests/`: C unit tests.
 - `tests_py/`: Python tests for helper scripts and CSV export behavior.
-- `workloads/`: sample workload files.
+- `workloads/`: sample workload files (basic, rr, priority, edge, mixed).
 - `dashboard/`: no-build browser dashboard.
 - `scripts/visualize_runs.py`: CSV-to-HTML dashboard generator.
 - `scripts/os_process_logger.py`: local process sampler and workload generator.
