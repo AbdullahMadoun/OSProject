@@ -83,6 +83,7 @@ void metrics_compute(Process *procs, int n, const SimResult *r, Metrics *m)
     }
     m->context_switches = r->context_switches;
     m->total_time = r->total_time;
+    m->idle_time = r->idle_time;
 }
 
 void metrics_print_table(const Process *procs, int n, const Metrics *m,

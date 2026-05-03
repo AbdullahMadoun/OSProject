@@ -15,6 +15,7 @@ typedef struct {
     double throughput;
     int context_switches;
     int total_time;
+    int idle_time;
 } Metrics;
 
 /** Compute per-process and aggregate metrics for a completed simulation run. */

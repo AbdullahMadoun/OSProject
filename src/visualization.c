@@ -135,6 +135,7 @@ void viz_print_metrics(const Metrics *m, SchedAlgo algo)
     printf("  throughput     : %.2f\n", m->throughput);
     printf("  ctx switches   : %d\n", m->context_switches);
     printf("  total time     : %d\n", m->total_time);
+    printf("  idle time      : %d\n", m->idle_time);
 }
 
 void viz_print_comparison(const Metrics metrics[ALGO_COUNT],
