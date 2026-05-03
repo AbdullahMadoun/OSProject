@@ -65,6 +65,21 @@ static char *skip_ws(char *s)
     return s;
 }
 
+static void strip_cr(char *s)
+{
+    char *p = s;
+    while (*p != '\0') {
+        p++;
+    }
+    if (p > s && *(p - 1) == '\n') {
+        p--;
+    }
+    if (p > s && *(p - 1) == '\r') {
+        *(p - 1) = '\n';
+        *p = '\0';
+    }
+}
+
 int input_validate(const Process *procs, int n)
 {
     int i;
@@ -147,6 +162,7 @@ static int parse_payload(FILE *fp, const char *source, Process *procs,
 
     while (fgets(line, sizeof(line), fp) != NULL) {
         line_no++;
+        strip_cr(line);
         if (parse_line(line, line_no, procs, &count, max_procs, source) !=
             CS_OK) {
             return CS_ERR;
@@ -215,6 +231,7 @@ int input_load_buffer(const char *data, size_t len, Process *procs,
         line[line_len++] = (char)ch;
         if (ch == '\n') {
             line[line_len] = '\0';
+            strip_cr(line);
             line_no++;
             if (parse_line(line, line_no, procs, &count, max_procs,
                            "input_load_buffer") != CS_OK) {
