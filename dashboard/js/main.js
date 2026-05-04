@@ -23,6 +23,14 @@
     ],
     edge: [
       { pid: 1, arrival: 5, burst: 3, priority: 1 }
+    ],
+    mixed: [
+      { pid: 1, arrival: 0, burst: 6, priority: 3 },
+      { pid: 2, arrival: 2, burst: 2, priority: 1 },
+      { pid: 3, arrival: 4, burst: 8, priority: 4 },
+      { pid: 4, arrival: 5, burst: 3, priority: 2 },
+      { pid: 5, arrival: 8, burst: 5, priority: 1 },
+      { pid: 6, arrival: 10, burst: 1, priority: 5 }
     ]
   };
 

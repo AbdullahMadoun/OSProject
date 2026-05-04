@@ -442,3 +442,20 @@ textarea {
     display: none;
   }
 }
+
+/* ── Race Mode ──────────────────────────────────────────────────────────── */
+.race-btn-start {
+  background: var(--color-primary-container, #00d4ff);
+  color: var(--color-on-primary-container, #003642);
+}
+
+.race-btn-stop {
+  background: rgba(255, 80, 80, 0.15);
+  border: 1px solid rgba(255, 80, 80, 0.35);
+  color: #ff6464;
+}
+
+.race-btn-stop:hover {
+  background: rgba(255, 80, 80, 0.25);
+  box-shadow: 0 0 18px rgba(255, 80, 80, 0.3);
+}
