@@ -6,7 +6,8 @@
     sjf: "Shortest Job First",
     rr: "Round Robin",
     priority: "Priority",
-    mlfq: "Multilevel Feedback Queue"
+    mlfq: "Multilevel Feedback Queue",
+    srtf: "Shortest Remaining Time First"
   };
 
   const ALGO_COLORS = {
@@ -14,7 +15,8 @@
     sjf: "#10b981",
     rr: "#f59e0b",
     priority: "#8b5cf6",
-    mlfq: "#e11d48"
+    mlfq: "#e11d48",
+    srtf: "#06b6d4"
   };
 
   const MLFQ_QUEUE_COLORS = ["#f97316", "#a855f7", "#64748b"];
@@ -99,6 +101,16 @@
         return `P${seg.pid} holds the highest priority (value = ${chosen.priority}, lower = more urgent).${rivals.length > 0 ? ` Ties broken by earliest arrival.` : ""}`;
       }
 
+      case "srtf": {
+        const rem = getRemainingAt(result, seg.pid, seg.start);
+        const rivals = ready.filter((p) => p.pid !== seg.pid);
+        const longerCount = rivals.filter((p) => {
+          const r2 = getRemainingAt(result, p.pid, seg.start);
+          return r2 >= rem;
+        }).length;
+        return `P${seg.pid} has the shortest remaining time (${rem} ms) at t=${seg.start}. SRTF preempts the running job the moment a shorter-remaining process arrives — unlike SJF, it never waits for the current job to finish.${longerCount > 0 ? ` ${longerCount} other process${longerCount > 1 ? "es were" : " was"} longer.` : ""}`;
+      }
+
       case "mlfq": {
         const qLevel = seg.queueLevel !== undefined ? seg.queueLevel : "?";
         const qNames = ["Q0 — highest priority (shortest quantum)", "Q1 — medium priority", "Q2 — lowest priority (FCFS, no quantum limit)"];
@@ -124,6 +136,11 @@
           return a.arrival - b.arrival || a.pid - b.pid;
         case "priority":
           return a.priority - b.priority || a.arrival - b.arrival || a.pid - b.pid;
+        case "srtf": {
+          const ra = getRemainingAt(result, a.pid, t);
+          const rb = getRemainingAt(result, b.pid, t);
+          return ra - rb || a.arrival - b.arrival || a.pid - b.pid;
+        }
         default:
           return a.pid - b.pid;
       }

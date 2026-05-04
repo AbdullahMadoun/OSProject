@@ -6,7 +6,8 @@
     sjf: "#10b981",
     rr: "#f59e0b",
     priority: "#8b5cf6",
-    mlfq: "#e11d48"
+    mlfq: "#e11d48",
+    srtf: "#06b6d4"
   };
 
   function getAlgorithmColor(algorithm) {
