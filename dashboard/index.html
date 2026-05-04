@@ -109,6 +109,7 @@
   <script defer src="js/main.js"></script>
   <script defer src="js/race.js"></script>
   <script defer src="js/inspector.js"></script>
+  <script defer src="js/bts.js"></script>
 </head>
 <body class="bg-surface-container-lowest text-on-surface font-body-md antialiased min-h-screen flex flex-col relative overflow-x-hidden selection:bg-primary-container selection:text-on-primary-container">
   <div class="ambient-glow top-0 left-1/4 w-[600px] h-[600px] bg-primary-container/5"></div>
@@ -126,6 +127,7 @@
         <a class="text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all duration-200 active:scale-95 cursor-pointer flex items-center h-full px-2" href="#metrics" id="navMetrics">Metrics</a>
         <a class="text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all duration-200 active:scale-95 cursor-pointer flex items-center h-full px-2" href="#compare" id="navCompare">Compare</a>
         <a class="text-slate-400 hover:text-cyan-400 hover:bg-white/5 transition-all duration-200 active:scale-95 cursor-pointer flex items-center h-full px-2 gap-1" href="#race" id="navRace"><span class="material-symbols-outlined text-[16px]" style="font-variation-settings:'FILL' 1">sports_score</span>Race</a>
+        <a class="text-slate-400 hover:text-cyan-400 hover:bg-white/5 transition-all duration-200 active:scale-95 cursor-pointer flex items-center h-full px-2 gap-1" href="#bts" id="navBts"><span class="material-symbols-outlined text-[16px]" style="font-variation-settings:'FILL' 1">sports_esports</span>Play</a>
       </nav>
       <div class="flex items-center gap-3">
         <a id="navRunLink" class="hidden sm:flex bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-body-md font-medium px-4 py-2 rounded-lg hover:opacity-90 transition-opacity shadow-[0_0_15px_rgba(6,182,212,0.3)] border border-white/10" href="#input">Start Simulation</a>
@@ -528,6 +530,123 @@
       <!-- Podium (hidden until race ends) -->
       <div id="racePodium" class="hidden"></div>
     </section>
+
+    <!-- ── Be the Scheduler ─────────────────────────────────────────────────── -->
+    <section id="bts" class="scroll-mt-24 flex flex-col gap-lg reveal">
+      <header class="flex flex-col gap-2">
+        <div class="flex items-center gap-3">
+          <span class="material-symbols-outlined text-primary text-4xl" style="font-variation-settings:'FILL' 1">sports_esports</span>
+          <h2 class="font-display text-display text-on-surface">Be the Scheduler</h2>
+        </div>
+        <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">
+          You're in control. Pick which process runs at every step — then see how you compare to FCFS, SJF, RR, and Priority.
+        </p>
+      </header>
+
+      <!-- Start controls -->
+      <div class="glass-card noise-bg rounded-xl p-lg flex flex-col sm:flex-row items-start sm:items-center gap-lg">
+        <div class="absolute inset-0 noise-overlay pointer-events-none rounded-xl"></div>
+        <div class="content-relative flex flex-col gap-2 flex-1">
+          <span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Step Size</span>
+          <div class="flex items-center gap-3">
+            <select id="btsStepSize" class="w-40 bg-surface-container-low border border-outline-variant/50 rounded-lg px-4 py-2 text-on-surface font-body-md">
+              <option value="1" selected>1 ms / step</option>
+              <option value="2">2 ms / step</option>
+              <option value="5">5 ms / step</option>
+            </select>
+            <p class="text-xs text-on-surface-variant max-w-xs">
+              Smaller steps = more decisions. Larger steps = faster play.
+            </p>
+          </div>
+        </div>
+        <div class="content-relative">
+          <button id="btsStartButton"
+                  class="bg-primary-container text-on-primary-container font-semibold px-6 py-3 rounded-xl
+                         hover:shadow-[0_0_20px_rgba(0,212,255,0.3)] hover:-translate-y-0.5 transition-all
+                         flex items-center gap-2 text-[17px]" type="button">
+            <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">sports_esports</span>
+            Start Game
+          </button>
+        </div>
+      </div>
+
+      <!-- Game area (shown after start) -->
+      <div id="btsGameArea" class="hidden flex flex-col gap-lg">
+
+        <!-- Live stats row -->
+        <div class="grid grid-cols-3 gap-4">
+          <div class="glass-card noise-bg rounded-xl p-md text-center">
+            <div class="absolute inset-0 noise-overlay pointer-events-none rounded-xl"></div>
+            <p class="font-label-caps text-[10px] text-on-surface-variant uppercase tracking-widest mb-1 content-relative">Current Time</p>
+            <p id="btsClock" class="font-mono-stats text-h1 font-bold text-primary content-relative">0 ms</p>
+          </div>
+          <div class="glass-card noise-bg rounded-xl p-md text-center">
+            <div class="absolute inset-0 noise-overlay pointer-events-none rounded-xl"></div>
+            <p class="font-label-caps text-[10px] text-on-surface-variant uppercase tracking-widest mb-1 content-relative">Avg Wait (done)</p>
+            <p id="btsAvgWait" class="font-mono-stats text-h1 font-bold text-on-surface content-relative">—</p>
+          </div>
+          <div class="glass-card noise-bg rounded-xl p-md text-center">
+            <div class="absolute inset-0 noise-overlay pointer-events-none rounded-xl"></div>
+            <p class="font-label-caps text-[10px] text-on-surface-variant uppercase tracking-widest mb-1 content-relative">Completed</p>
+            <p id="btsCompleted" class="font-mono-stats text-h1 font-bold text-on-surface content-relative">0 / ?</p>
+          </div>
+        </div>
+
+        <!-- Ready queue picker -->
+        <div class="glass-card noise-bg rounded-xl p-lg flex flex-col gap-md">
+          <div class="absolute inset-0 noise-overlay pointer-events-none rounded-xl"></div>
+          <div class="content-relative flex items-center justify-between gap-4 flex-wrap">
+            <h3 class="font-h2 text-h2 text-on-surface flex items-center gap-2">
+              <span class="material-symbols-outlined text-primary" style="font-variation-settings:'FILL' 1">queue</span>
+              Ready Queue — Pick a process
+            </h3>
+            <button id="btsHintButton" class="hidden flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-yellow-400/30 bg-yellow-400/10 text-yellow-400 text-sm font-medium hover:bg-yellow-400/20 transition-colors" type="button">
+              <span class="material-symbols-outlined text-sm" style="font-variation-settings:'FILL' 1">lightbulb</span>&nbsp;Hint
+            </button>
+          </div>
+          <div id="btsReadyQueue" class="content-relative flex flex-wrap gap-4 min-h-[80px] items-start"></div>
+        </div>
+
+        <!-- Mini timeline -->
+        <div class="glass-card noise-bg rounded-xl p-lg flex flex-col gap-md">
+          <div class="absolute inset-0 noise-overlay pointer-events-none rounded-xl"></div>
+          <h3 class="content-relative font-h2 text-h2 text-on-surface flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary">history</span>
+            Your Timeline
+          </h3>
+          <div id="btsMiniTimeline" class="content-relative overflow-x-auto pb-2"></div>
+        </div>
+
+        <!-- Process status table -->
+        <div class="glass-card noise-bg rounded-xl p-lg overflow-hidden">
+          <div class="absolute inset-0 noise-overlay pointer-events-none rounded-xl"></div>
+          <h3 class="content-relative font-h2 text-h2 text-on-surface mb-md flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary">table_chart</span>
+            Process Status
+          </h3>
+          <div class="content-relative overflow-x-auto">
+            <table class="w-full text-sm font-mono">
+              <thead class="border-b border-white/10 text-on-surface-variant">
+                <tr>
+                  <th class="px-3 py-2 text-left">PID</th>
+                  <th class="px-3 py-2 text-center">Remaining</th>
+                  <th class="px-3 py-2 text-center">Arrival</th>
+                  <th class="px-3 py-2 text-center">Priority</th>
+                  <th class="px-3 py-2 text-center">Status</th>
+                  <th class="px-3 py-2 text-center">Wait</th>
+                </tr>
+              </thead>
+              <tbody id="btsProcessTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div><!-- /btsGameArea -->
+
+      <!-- Results (shown when game ends) -->
+      <div id="btsResults" class="hidden relative overflow-hidden"></div>
+
+    </section>
   </main>
 
   <footer class="bg-slate-950 w-full py-12 px-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 font-inter text-xs uppercase mt-auto z-10">
@@ -539,6 +658,7 @@
       <a class="hover:text-cyan-400 transition-colors opacity-80 hover:opacity-100" href="#metrics">Metrics</a>
       <a class="hover:text-cyan-400 transition-colors opacity-80 hover:opacity-100" href="#compare">Compare</a>
       <a class="hover:text-cyan-400 transition-colors opacity-80 hover:opacity-100" href="#race">Race</a>
+      <a class="hover:text-cyan-400 transition-colors opacity-80 hover:opacity-100" href="#bts">Play</a>
     </div>
   </footer>
 
