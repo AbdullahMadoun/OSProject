@@ -108,7 +108,7 @@
     return ticks.join("");
   }
 
-  function renderBlocks(result, unitWidth) {
+  function renderBlocks(result, unitWidth, resultIdx) {
     return result.timeline
       .map((segment) => {
         const width = Math.max(segment.duration * unitWidth, 20);
@@ -127,8 +127,9 @@
             </div>`;
         }
 
+        const why = JSON.stringify({pid: segment.pid, start: segment.start, end: segment.end, algorithm: result.algorithm, ri: resultIdx});
         return `
-          <div class="gantt-block algo-${result.algorithm}" style="width:${width}px" title="P${segment.pid}: ${segment.start}-${segment.end}">
+          <div class="gantt-block gantt-why-block algo-${result.algorithm}" style="width:${width}px" title="P${segment.pid}: ${segment.start}-${segment.end} · Click to inspect" data-why='${why}'>
             <span>P${segment.pid}</span>
             <small>${segment.start}-${segment.end}</small>
           </div>`;
@@ -136,7 +137,7 @@
       .join("");
   }
 
-  function renderSingleChart(result, stacked) {
+  function renderSingleChart(result, stacked, resultIdx) {
     const totalTime = result.totalTime || 0;
     const track = getTrackWidth(totalTime);
     const chartTitle = stacked ? result.longLabel : "Master Gantt Chart";
@@ -159,7 +160,7 @@
         <div class="content-relative gantt-scroll overflow-x-auto pb-4">
           <div class="gantt-inner" style="min-width:${track.width}px; width:${track.width}px">
             <div class="gantt-track" style="min-width:${track.width}px; width:${track.width}px">
-              ${renderBlocks(result, track.unitWidth)}
+              ${renderBlocks(result, track.unitWidth, resultIdx)}
             </div>
             <div class="time-axis" style="min-width:${track.width}px; width:${track.width}px">
               ${renderAxis(totalTime, track.unitWidth)}
@@ -186,7 +187,8 @@
 
     container.classList.toggle("gantt-all-grid", mode === "all");
     createLegend(renderedResults, legendContainer, mode);
-    container.innerHTML = renderedResults.map((result) => renderSingleChart(result, mode === "all")).join("");
+    window._lastGanttResults = results;
+    container.innerHTML = renderedResults.map((result, idx) => renderSingleChart(result, mode === "all", idx)).join("");
   }
 
   window.GanttRenderer = {

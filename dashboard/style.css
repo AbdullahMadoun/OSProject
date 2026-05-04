@@ -459,3 +459,58 @@ textarea {
   background: rgba(255, 80, 80, 0.25);
   box-shadow: 0 0 18px rgba(255, 80, 80, 0.3);
 }
+
+/* ── Why Inspector ──────────────────────────────────────────────────────── */
+
+/* Clickable Gantt process blocks */
+.gantt-why-block {
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.12s ease, box-shadow 0.15s ease;
+  position: relative;
+}
+
+.gantt-why-block:hover {
+  filter: brightness(1.3) saturate(1.2);
+  transform: scaleY(1.1);
+  z-index: 2;
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.15);
+}
+
+.gantt-why-block:active {
+  transform: scaleY(0.97);
+}
+
+/* Inspector panel chip */
+.inspector-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid;
+  border-color: color-mix(in srgb, var(--chip-color, #3b82f6) 40%, transparent);
+  color: var(--chip-color, #3b82f6);
+  background: color-mix(in srgb, var(--chip-color, #3b82f6) 12%, transparent);
+}
+
+/* Inspector table rows */
+.inspector-table thead tr {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.inspector-row td {
+  background: transparent;
+  color: var(--color-on-surface-variant, #b0b8c1);
+  transition: background 0.1s;
+}
+
+.inspector-row:hover td {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.inspector-row-winner td {
+  background: color-mix(in srgb, var(--inspector-accent, #3b82f6) 12%, transparent);
+  color: var(--color-on-surface, #e2e8f0);
+  font-weight: 600;
+}
