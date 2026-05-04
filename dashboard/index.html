@@ -110,6 +110,7 @@
   <script defer src="js/race.js"></script>
   <script defer src="js/inspector.js"></script>
   <script defer src="js/bts.js"></script>
+  <script defer src="js/adversarial.js"></script>
 </head>
 <body class="bg-surface-container-lowest text-on-surface font-body-md antialiased min-h-screen flex flex-col relative overflow-x-hidden selection:bg-primary-container selection:text-on-primary-container">
   <div class="ambient-glow top-0 left-1/4 w-[600px] h-[600px] bg-primary-container/5"></div>
@@ -356,6 +357,68 @@
             </div>
           </article>
         </div>
+
+        <!-- ── Adversarial Workload Generator ────────────────────────────── -->
+        <article class="glass-card noise-bg rounded-xl overflow-hidden border border-red-500/20 relative">
+          <div class="absolute inset-0 noise-overlay pointer-events-none rounded-xl"></div>
+          <!-- Header -->
+          <div class="content-relative flex flex-col md:flex-row md:items-center justify-between gap-4 px-lg py-md border-b border-white/8">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-red-500/15 border border-red-500/25 flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-red-400" style="font-variation-settings:'FILL' 1">crisis_alert</span>
+              </div>
+              <div>
+                <h3 class="font-h2 text-h2 text-on-surface">Adversarial Generator</h3>
+                <p id="adversarialTagline" class="text-xs text-red-400/80 font-mono mt-0.5">One slow truck blocks the whole highway.</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <select id="adversarialIntensity"
+                      class="bg-surface-container-low border border-outline-variant/50 rounded-lg px-3 py-2 text-on-surface text-sm font-mono">
+                <option value="mild">Mild</option>
+                <option value="moderate" selected>Moderate</option>
+                <option value="extreme">Extreme</option>
+              </select>
+              <button id="adversarialGenerateBtn"
+                      class="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/15 border border-red-500/30
+                             text-red-400 font-semibold text-sm hover:bg-red-500/25 hover:-translate-y-0.5 transition-all">
+                <span class="material-symbols-outlined text-sm" style="font-variation-settings:'FILL' 1">bolt</span>
+                Generate
+              </button>
+            </div>
+          </div>
+
+          <!-- Body -->
+          <div class="content-relative px-lg py-md flex flex-col gap-md">
+            <!-- Victim picker -->
+            <div class="flex flex-col gap-2">
+              <span class="font-label-caps text-[10px] text-on-surface-variant uppercase tracking-widest">Make this algorithm look bad</span>
+              <div class="flex flex-wrap gap-2">
+                <button class="adv-victim-btn adv-victim-active" data-victim="fcfs" type="button">
+                  <span class="material-symbols-outlined text-sm">local_shipping</span>FCFS
+                </button>
+                <button class="adv-victim-btn" data-victim="sjf" type="button">
+                  <span class="material-symbols-outlined text-sm">hourglass_empty</span>SJF
+                </button>
+                <button class="adv-victim-btn" data-victim="rr" type="button">
+                  <span class="material-symbols-outlined text-sm">sync</span>Round Robin
+                </button>
+                <button class="adv-victim-btn" data-victim="priority" type="button">
+                  <span class="material-symbols-outlined text-sm">swap_vert</span>Priority
+                </button>
+              </div>
+            </div>
+
+            <!-- Description -->
+            <p id="adversarialDescription"
+               class="text-sm text-on-surface-variant leading-relaxed bg-surface-container-low/40 rounded-xl px-4 py-3 border border-white/8">
+            </p>
+
+            <!-- Preview (injected by adversarial.js) -->
+            <div id="adversarialPreview" class="hidden"></div>
+          </div>
+        </article>
+
       </section>
     </section>
 

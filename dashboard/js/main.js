@@ -543,6 +543,11 @@
     getCtxOverhead();
     observeRevealElements();
     runSimulation();
+
+    window._dashSetPreset = function (processes) {
+      renderProcessRows(processes);
+      validateProcessTable();
+    };
   }
 
   document.addEventListener("DOMContentLoaded", init);

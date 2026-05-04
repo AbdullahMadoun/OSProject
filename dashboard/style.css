@@ -649,3 +649,37 @@ textarea {
   background: rgba(100,116,139,0.2);
   color: #94a3b8;
 }
+
+/* ── Adversarial Generator ──────────────────────────────────────────────── */
+
+.adv-victim-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+  color: var(--color-on-surface-variant, #94a3b8);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.12s;
+}
+
+.adv-victim-btn:hover {
+  background: rgba(239,68,68,0.1);
+  border-color: rgba(239,68,68,0.3);
+  color: #f87171;
+}
+
+.adv-victim-btn.adv-victim-active {
+  background: rgba(239,68,68,0.15);
+  border-color: rgba(239,68,68,0.4);
+  color: #f87171;
+  font-weight: 600;
+}
+
+.adv-victim-btn:active {
+  transform: scale(0.97);
+}
