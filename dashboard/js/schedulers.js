@@ -8,7 +8,8 @@
     fcfs: { key: "fcfs", label: "FCFS", longLabel: "First Come First Served" },
     sjf: { key: "sjf", label: "SJF", longLabel: "Shortest Job First" },
     rr: { key: "rr", label: "RR", longLabel: "Round Robin" },
-    priority: { key: "priority", label: "Priority", longLabel: "Priority" }
+    priority: { key: "priority", label: "Priority", longLabel: "Priority" },
+    mlfq: { key: "mlfq", label: "MLFQ", longLabel: "Multilevel Feedback Queue" }
   };
 
   function cloneProcesses(processes) {
@@ -286,12 +287,110 @@
     return finalizeResult("rr", processes, timeline, contextSwitches);
   }
 
+  function scheduleMlfq(inputProcesses, options) {
+    const config = options || {};
+    const ctxOverhead = Math.max(0, Number(config.ctxOverhead) || 0);
+    const q0Quantum = Math.max(1, Number(config.q0Quantum) || 2);
+    const q1Quantum = Math.max(1, Number(config.q1Quantum) || 4);
+    // Q2 = FCFS (unlimited)
+
+    const processes = cloneProcesses(inputProcesses).map((p) => ({ ...p, queueLevel: 0 }));
+    const order = processes.slice().sort(byArrivalThenPid);
+    const queues = [[], [], []];
+    const quantums = [q0Quantum, q1Quantum, Infinity];
+    const timeline = [];
+    let currentTime = 0;
+    let nextIndex = 0;
+    let completed = 0;
+    let contextSwitches = 0;
+    let lastDispatchedPid = null;
+
+    function enqueueArrivals() {
+      while (nextIndex < order.length && order[nextIndex].arrival <= currentTime) {
+        queues[0].push(order[nextIndex]);
+        nextIndex += 1;
+      }
+    }
+
+    function pickNext() {
+      for (let q = 0; q < queues.length; q++) {
+        if (queues[q].length > 0) return { proc: queues[q].shift(), qLevel: q };
+      }
+      return null;
+    }
+
+    while (completed < processes.length) {
+      enqueueArrivals();
+      const next = pickNext();
+
+      if (!next) {
+        if (nextIndex < order.length) {
+          const nextArrival = order[nextIndex].arrival;
+          pushSegment(timeline, PID_IDLE, currentTime, nextArrival, true, "idle");
+          currentTime = nextArrival;
+        }
+        continue;
+      }
+
+      const { proc, qLevel } = next;
+      const quantum = quantums[qLevel];
+
+      if (lastDispatchedPid !== null && lastDispatchedPid !== proc.pid) {
+        contextSwitches += 1;
+        currentTime = applyContextOverhead(timeline, currentTime, ctxOverhead);
+        enqueueArrivals();
+      }
+
+      if (proc.start === null) proc.start = currentTime;
+
+      const sliceStart = currentTime;
+      const planned = quantum === Infinity ? proc.remaining : Math.min(proc.remaining, quantum);
+      let runUntil = sliceStart + planned;
+      let wasPreempted = false;
+
+      // Higher-priority preemption: if currently in Q1 or Q2 and a new process arrives before the slice ends
+      if (qLevel > 0 && nextIndex < order.length) {
+        const nextArrival = order[nextIndex].arrival;
+        if (nextArrival < runUntil) {
+          runUntil = nextArrival;
+          wasPreempted = true;
+        }
+      }
+
+      const ran = runUntil - sliceStart;
+      proc.remaining -= ran;
+      pushSegment(timeline, proc.pid, sliceStart, runUntil, false);
+      timeline[timeline.length - 1].queueLevel = qLevel;
+      currentTime = runUntil;
+
+      enqueueArrivals();
+
+      if (proc.remaining <= 0) {
+        proc.completion = currentTime;
+        completed += 1;
+      } else if (wasPreempted) {
+        // Put preempted process back at front of its current queue
+        queues[qLevel].unshift(proc);
+      } else {
+        // Exhausted quantum → demote
+        const nextLevel = Math.min(qLevel + 1, 2);
+        proc.queueLevel = nextLevel;
+        queues[nextLevel].push(proc);
+      }
+
+      lastDispatchedPid = proc.pid;
+    }
+
+    return finalizeResult("mlfq", processes, timeline, contextSwitches);
+  }
+
   function runAlgorithm(algorithm, processes, options) {
     const config = options || {};
     if (algorithm === "fcfs") return scheduleFcfs(processes, config);
     if (algorithm === "sjf") return scheduleSjf(processes, config);
     if (algorithm === "rr") return scheduleRoundRobin(processes, config.quantum, config);
     if (algorithm === "priority") return schedulePriority(processes, config);
+    if (algorithm === "mlfq") return scheduleMlfq(processes, config);
     throw new Error(`Unsupported algorithm: ${algorithm}`);
   }
 

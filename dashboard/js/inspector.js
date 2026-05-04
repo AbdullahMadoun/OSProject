@@ -5,15 +5,19 @@
     fcfs: "First Come, First Served",
     sjf: "Shortest Job First",
     rr: "Round Robin",
-    priority: "Priority"
+    priority: "Priority",
+    mlfq: "Multilevel Feedback Queue"
   };
 
   const ALGO_COLORS = {
     fcfs: "#3b82f6",
     sjf: "#10b981",
     rr: "#f59e0b",
-    priority: "#8b5cf6"
+    priority: "#8b5cf6",
+    mlfq: "#e11d48"
   };
+
+  const MLFQ_QUEUE_COLORS = ["#f97316", "#a855f7", "#64748b"];
 
   function hexToRgb(hex) {
     return [
@@ -93,6 +97,13 @@
         );
         const rivals = ready.filter((p) => p.pid !== seg.pid && p.priority <= chosen.priority);
         return `P${seg.pid} holds the highest priority (value = ${chosen.priority}, lower = more urgent).${rivals.length > 0 ? ` Ties broken by earliest arrival.` : ""}`;
+      }
+
+      case "mlfq": {
+        const qLevel = seg.queueLevel !== undefined ? seg.queueLevel : "?";
+        const qNames = ["Q0 — highest priority (shortest quantum)", "Q1 — medium priority", "Q2 — lowest priority (FCFS, no quantum limit)"];
+        const rem = getRemainingAt(result, seg.pid, seg.start);
+        return `P${seg.pid} was scheduled from ${qNames[qLevel] || `Q${qLevel}`} with ${rem} ms remaining. Processes start in Q0 and are demoted each time they exhaust their quantum without finishing — rewarding short CPU bursts.`;
       }
 
       default:
@@ -189,11 +200,16 @@
     const result = results[seg.ri];
     const ready = getReadyQueue(result, seg.start);
     const explanation = buildExplanation(seg, result);
-    const color = ALGO_COLORS[seg.algorithm] || "#3b82f6";
+    const baseColor = ALGO_COLORS[seg.algorithm] || "#3b82f6";
+    const color = (seg.algorithm === "mlfq" && seg.queueLevel !== undefined)
+      ? MLFQ_QUEUE_COLORS[seg.queueLevel] || baseColor
+      : baseColor;
     const chosen = result.processes.find((p) => p.pid === seg.pid);
 
+    const qSuffix = (seg.algorithm === "mlfq" && seg.queueLevel !== undefined)
+      ? ` · Q${seg.queueLevel}` : "";
     document.getElementById("whyPanelTitle").textContent =
-      `Why P${seg.pid} at t = ${seg.start}?`;
+      `Why P${seg.pid} at t = ${seg.start}?${qSuffix}`;
 
     document.getElementById("whyPanelContent").innerHTML = `
       <div class="flex items-center gap-2 flex-wrap mb-5">

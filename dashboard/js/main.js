@@ -55,6 +55,11 @@
       "clearProcessButton",
       "runSimulationButton",
       "runAllButton",
+      "mlfqPanel",
+      "mlfqQ0Input",
+      "mlfqQ0Value",
+      "mlfqQ1Input",
+      "mlfqQ1Value",
       "quantumPanel",
       "quantumInput",
       "quantumValue",
@@ -252,6 +257,7 @@
 
     const showQuantum = algorithm === "rr" || algorithm === "all";
     els.quantumPanel.classList.toggle("hidden", !showQuantum);
+    if (els.mlfqPanel) els.mlfqPanel.classList.toggle("hidden", algorithm !== "mlfq");
     updateComparisonVisibility(false);
   }
 
@@ -269,6 +275,16 @@
     els.ctxInput.value = overhead;
     els.ctxValue.textContent = `${overhead} ms`;
     return overhead;
+  }
+
+  function getMlfqQuantums() {
+    const q0 = Math.min(20, Math.max(1, parseInteger(els.mlfqQ0Input ? els.mlfqQ0Input.value : "2") || 2));
+    const q1 = Math.min(20, Math.max(1, parseInteger(els.mlfqQ1Input ? els.mlfqQ1Input.value : "4") || 4));
+    if (els.mlfqQ0Input) els.mlfqQ0Input.value = q0;
+    if (els.mlfqQ0Value) els.mlfqQ0Value.textContent = `${q0} ms`;
+    if (els.mlfqQ1Input) els.mlfqQ1Input.value = q1;
+    if (els.mlfqQ1Value) els.mlfqQ1Value.textContent = `${q1} ms`;
+    return { q0Quantum: q0, q1Quantum: q1 };
   }
 
   function updateComparisonVisibility(hasAllResults) {
@@ -402,7 +418,12 @@
     const quantum = getQuantum();
     const ctxOverhead = getCtxOverhead();
     const mode = state.selectedAlgorithm;
-    const options = { quantum, ctxOverhead };
+
+    let options = { quantum, ctxOverhead };
+    if (mode === "mlfq") {
+      const { q0Quantum, q1Quantum } = getMlfqQuantums();
+      options = { ctxOverhead, q0Quantum, q1Quantum };
+    }
 
     const results = mode === "all"
       ? window.SchedulerCore.runAllAlgorithms(processes, options)
@@ -413,9 +434,16 @@
     state.playbackTime = state.playbackMaxTime;
 
     const primaryResult = results[0];
-    state.ganttLabelBase = mode === "all"
-      ? `All algorithms - RR q=${quantum} - CS overhead=${ctxOverhead}ms`
-      : `${primaryResult.longLabel}${primaryResult.algorithm === "rr" ? ` - q=${quantum}` : ""} - CS overhead=${ctxOverhead}ms`;
+    let ganttLabel;
+    if (mode === "all") {
+      ganttLabel = `All algorithms - RR q=${quantum} - CS overhead=${ctxOverhead}ms`;
+    } else if (mode === "mlfq") {
+      const { q0Quantum, q1Quantum } = getMlfqQuantums();
+      ganttLabel = `MLFQ - Q0=${q0Quantum}ms · Q1=${q1Quantum}ms · Q2=∞ - CS overhead=${ctxOverhead}ms`;
+    } else {
+      ganttLabel = `${primaryResult.longLabel}${primaryResult.algorithm === "rr" ? ` - q=${quantum}` : ""} - CS overhead=${ctxOverhead}ms`;
+    }
+    state.ganttLabelBase = ganttLabel;
 
     renderPlaybackFrame();
     updateMetrics(primaryResult, mode === "all" ? "all" : "single");
@@ -475,6 +503,8 @@
     }
     els.quantumInput.addEventListener("input", getQuantum);
     els.ctxInput.addEventListener("input", getCtxOverhead);
+    if (els.mlfqQ0Input) els.mlfqQ0Input.addEventListener("input", getMlfqQuantums);
+    if (els.mlfqQ1Input) els.mlfqQ1Input.addEventListener("input", getMlfqQuantums);
 
     els.playbackPlay.addEventListener("click", togglePlayback);
     els.playbackPrevious.addEventListener("click", () => stepPlayback(-1));

@@ -5,7 +5,8 @@
     fcfs: "#3b82f6",
     sjf: "#10b981",
     rr: "#f59e0b",
-    priority: "#8b5cf6"
+    priority: "#8b5cf6",
+    mlfq: "#e11d48"
   };
 
   function getAlgorithmColor(algorithm) {
@@ -127,10 +128,13 @@
             </div>`;
         }
 
-        const why = JSON.stringify({pid: segment.pid, start: segment.start, end: segment.end, algorithm: result.algorithm, ri: resultIdx});
+        const qLevel = segment.queueLevel;
+        const qSuffix = (result.algorithm === "mlfq" && qLevel !== undefined) ? ` algo-mlfq-q${qLevel}` : "";
+        const qBadge = (result.algorithm === "mlfq" && qLevel !== undefined) ? `<em class="gantt-queue-badge">Q${qLevel}</em>` : "";
+        const why = JSON.stringify({pid: segment.pid, start: segment.start, end: segment.end, algorithm: result.algorithm, ri: resultIdx, queueLevel: qLevel});
         return `
-          <div class="gantt-block gantt-why-block algo-${result.algorithm}" style="width:${width}px" title="P${segment.pid}: ${segment.start}-${segment.end} · Click to inspect" data-why='${why}'>
-            <span>P${segment.pid}</span>
+          <div class="gantt-block gantt-why-block algo-${result.algorithm}${qSuffix}" style="width:${width}px" title="P${segment.pid} [Q${qLevel ?? ""}]: ${segment.start}-${segment.end} · Click to inspect" data-why='${why}'>
+            <span>P${segment.pid}${qBadge}</span>
             <small>${segment.start}-${segment.end}</small>
           </div>`;
       })

@@ -248,8 +248,32 @@
                 <button id="algorithmSjf" class="segmented-button px-4 py-1.5 rounded-md font-body-md text-sm" type="button" data-algorithm="sjf" aria-pressed="false">SJF</button>
                 <button id="algorithmRr" class="segmented-button px-4 py-1.5 rounded-md font-body-md text-sm" type="button" data-algorithm="rr" aria-pressed="false">RR</button>
                 <button id="algorithmPriority" class="segmented-button px-4 py-1.5 rounded-md font-body-md text-sm" type="button" data-algorithm="priority" aria-pressed="false">Priority</button>
+                <button id="algorithmMlfq" class="segmented-button px-4 py-1.5 rounded-md font-body-md text-sm" type="button" data-algorithm="mlfq" aria-pressed="false">MLFQ</button>
                 <button id="algorithmAll" class="segmented-button px-4 py-1.5 rounded-md font-body-md text-sm border-l border-outline-variant/30 ml-1 pl-5" type="button" data-algorithm="all" aria-pressed="false">All</button>
               </div>
+            </div>
+            <div id="mlfqPanel" class="hidden flex flex-col gap-3">
+              <p class="font-label-caps text-label-caps text-on-surface-variant uppercase">MLFQ Queue Quantums</p>
+              <div class="grid grid-cols-2 gap-3">
+                <div class="flex flex-col gap-1.5">
+                  <div class="flex justify-between items-end">
+                    <label class="font-label-caps text-[10px] text-on-surface-variant uppercase tracking-widest" for="mlfqQ0Input"><span class="inline-block w-2 h-2 rounded-full bg-orange-400 mr-1"></span>Q0</label>
+                    <span id="mlfqQ0Value" class="font-mono-stats text-mono-stats text-orange-400">2 ms</span>
+                  </div>
+                  <input id="mlfqQ0Input" class="w-full bg-surface border border-outline-variant/50 rounded-md px-3 py-2 font-mono-stats text-mono-stats text-on-surface outline-none focus:border-primary-container focus:bg-surface-container-highest transition-all" type="number" min="1" max="20" step="1" value="2">
+                </div>
+                <div class="flex flex-col gap-1.5">
+                  <div class="flex justify-between items-end">
+                    <label class="font-label-caps text-[10px] text-on-surface-variant uppercase tracking-widest" for="mlfqQ1Input"><span class="inline-block w-2 h-2 rounded-full bg-purple-400 mr-1"></span>Q1</label>
+                    <span id="mlfqQ1Value" class="font-mono-stats text-mono-stats text-purple-400">4 ms</span>
+                  </div>
+                  <input id="mlfqQ1Input" class="w-full bg-surface border border-outline-variant/50 rounded-md px-3 py-2 font-mono-stats text-mono-stats text-on-surface outline-none focus:border-primary-container focus:bg-surface-container-highest transition-all" type="number" min="1" max="20" step="1" value="4">
+                </div>
+              </div>
+              <p class="text-xs text-on-surface-variant flex items-center gap-1.5">
+                <span class="inline-block w-2 h-2 rounded-full bg-slate-500"></span>
+                Q2 runs FCFS (no quantum limit) &nbsp;·&nbsp; Lower number = higher priority
+              </p>
             </div>
             <div id="quantumPanel" class="flex flex-col gap-2">
               <div class="flex justify-between items-end">

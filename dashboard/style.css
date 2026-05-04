@@ -514,3 +514,37 @@ textarea {
   color: var(--color-on-surface, #e2e8f0);
   font-weight: 600;
 }
+
+/* ── MLFQ Queue Level Colors ────────────────────────────────────────────── */
+
+/* Override the base algo-mlfq color per queue level */
+.gantt-block.algo-mlfq-q0 {
+  background: linear-gradient(135deg, #f97316cc, #f97316);
+  border-color: #f9731660;
+  box-shadow: 0 0 10px #f9731640;
+}
+
+.gantt-block.algo-mlfq-q1 {
+  background: linear-gradient(135deg, #a855f7cc, #a855f7);
+  border-color: #a855f760;
+  box-shadow: 0 0 10px #a855f740;
+}
+
+.gantt-block.algo-mlfq-q2 {
+  background: linear-gradient(135deg, #64748bcc, #64748b);
+  border-color: #64748b60;
+  box-shadow: 0 0 8px #64748b30;
+}
+
+/* Queue level badge inside Gantt block */
+.gantt-queue-badge {
+  font-style: normal;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 3px;
+  padding: 0 3px;
+  margin-left: 3px;
+  vertical-align: middle;
+}
