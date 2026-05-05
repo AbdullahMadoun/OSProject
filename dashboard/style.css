@@ -683,3 +683,79 @@ textarea {
 .adv-victim-btn:active {
   transform: scale(0.97);
 }
+
+/* ── Quiz: Guess the Algorithm ──────────────────────────────────────────── */
+
+.quiz-choice-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+  color: var(--color-on-surface, #e2e8f0);
+  cursor: pointer;
+  transition: background 0.14s, border-color 0.14s, transform 0.1s, box-shadow 0.14s;
+  text-align: left;
+  width: 100%;
+}
+
+.quiz-choice-btn:hover:not(:disabled) {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.22);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+}
+
+.quiz-choice-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.quiz-choice-btn:disabled {
+  cursor: default;
+  opacity: 0.75;
+}
+
+.quiz-choice-btn.quiz-correct {
+  border-color: #22c55e;
+  background: rgba(34,197,94,0.12);
+  color: #86efac;
+  box-shadow: 0 0 18px rgba(34,197,94,0.25);
+  opacity: 1 !important;
+}
+
+.quiz-choice-btn.quiz-wrong {
+  border-color: #ef4444;
+  background: rgba(239,68,68,0.1);
+  color: #fca5a5;
+  box-shadow: 0 0 14px rgba(239,68,68,0.2);
+  opacity: 1 !important;
+  animation: quizShake 0.35s ease;
+}
+
+@keyframes quizShake {
+  0%,100% { transform: translateX(0); }
+  20%      { transform: translateX(-6px); }
+  40%      { transform: translateX(6px); }
+  60%      { transform: translateX(-4px); }
+  80%      { transform: translateX(4px); }
+}
+
+.quiz-feedback-correct,
+.quiz-feedback-wrong {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.quiz-feedback-correct {
+  color: #86efac;
+}
+
+.quiz-feedback-wrong {
+  color: #fca5a5;
+}
