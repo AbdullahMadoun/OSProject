@@ -545,7 +545,7 @@
   }
 
   function runAllAlgorithms(processes, options) {
-    return ["fcfs", "sjf", "rr", "priority"].map((algorithm) => {
+    return ["fcfs", "sjf", "rr", "priority", "srtf", "priorityp", "mlfq"].map((algorithm) => {
       return runAlgorithm(algorithm, processes, options);
     });
   }

@@ -759,3 +759,22 @@ textarea {
 .quiz-feedback-wrong {
   color: #fca5a5;
 }
+
+/* ── Kiosk / Presentation mode ──────────────────────────────────────────── */
+
+body.kiosk-mode .kiosk-hide {
+  display: none !important;
+}
+
+body.kiosk-mode #hero,
+body.kiosk-mode #input,
+body.kiosk-mode #race,
+body.kiosk-mode #bts,
+body.kiosk-mode #quiz,
+body.kiosk-mode footer {
+  display: none !important;
+}
+
+body.kiosk-mode main {
+  padding-bottom: 72px;
+}

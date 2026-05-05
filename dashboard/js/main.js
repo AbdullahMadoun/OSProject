@@ -548,6 +548,15 @@
       renderProcessRows(processes);
       validateProcessTable();
     };
+
+    window._dashRunKiosk = function (presetKey) {
+      renderProcessRows(clonePreset(presetKey));
+      validateProcessTable();
+      setAlgorithm("all");
+      runSimulation();
+      state.playbackTime = 0;
+      startPlayback();
+    };
   }
 
   document.addEventListener("DOMContentLoaded", init);
