@@ -429,7 +429,7 @@ def build_html_report(rows: list[dict[str, object]], source_name: str) -> str:
     </section>
     <section class="table-grid">
       {_summary_table(summary_rows, "Average Metrics By Algorithm")}
-      {_summary_table(latest_rows, "Latest Row Per Algorithm")}
+      {_summary_table(latest_rows, "Current Row Per Algorithm")}
     </section>
   </main>
 </body>

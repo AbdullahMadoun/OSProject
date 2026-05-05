@@ -76,6 +76,6 @@ def test_build_html_report_contains_dashboard_sections():
 
     assert "CPU Scheduling Results Dashboard" in report
     assert "Average Metrics By Algorithm" in report
-    assert "Latest Row Per Algorithm" in report
+    assert "Current Row Per Algorithm" in report
     assert "FCFS" in report
     assert "SJF" in report
