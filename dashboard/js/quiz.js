@@ -1,11 +1,11 @@
 (function () {
   "use strict";
 
-  const ALGO_KEYS = ["fcfs", "sjf", "rr", "priority", "mlfq", "srtf"];
+  const ALGO_KEYS = ["fcfs", "sjf", "rr", "priority", "mlfq", "srtf", "priorityp"];
 
   const ALGO_LABELS = {
     fcfs: "FCFS", sjf: "SJF", rr: "RR",
-    priority: "Priority", mlfq: "MLFQ", srtf: "SRTF"
+    priority: "Priority", mlfq: "MLFQ", srtf: "SRTF", priorityp: "P-Priority"
   };
 
   const ALGO_LONG = {
@@ -14,7 +14,8 @@
     rr: "Round Robin",
     priority: "Priority Scheduling",
     mlfq: "Multilevel Feedback Queue",
-    srtf: "Shortest Remaining Time First"
+    srtf: "Shortest Remaining Time First",
+    priorityp: "Preemptive Priority"
   };
 
   const ALGO_HINT = {
@@ -23,7 +24,8 @@
     rr: "Equal time slices rotate through every process in order.",
     priority: "Lowest priority number dispatched first regardless of burst.",
     mlfq: "New arrivals start in Q0; each quantum exhausted drops them a level.",
-    srtf: "Preempts the running job the moment a shorter-remaining one arrives."
+    srtf: "Preempts the running job the moment a shorter-remaining one arrives.",
+    priorityp: "Preempts whenever a higher-priority process arrives — regardless of burst."
   };
 
   // Anonymous PID-based colors — NOT algorithm colors, so they don't give it away.
@@ -33,12 +35,14 @@
   ];
 
   const PRESETS = [
+    // general mixed — balanced
     [
       { pid: 1, arrival: 0, burst: 6, priority: 2 },
       { pid: 2, arrival: 2, burst: 4, priority: 1 },
       { pid: 3, arrival: 4, burst: 8, priority: 3 },
       { pid: 4, arrival: 6, burst: 3, priority: 4 }
     ],
+    // 5-process mixed
     [
       { pid: 1, arrival: 0, burst: 6, priority: 3 },
       { pid: 2, arrival: 2, burst: 2, priority: 1 },
@@ -46,24 +50,71 @@
       { pid: 4, arrival: 5, burst: 3, priority: 2 },
       { pid: 5, arrival: 8, burst: 5, priority: 1 }
     ],
+    // RR-friendly: similar bursts, tight arrivals → choppy equal slices
     [
-      { pid: 1, arrival: 0, burst: 5, priority: 0 },
-      { pid: 2, arrival: 1, burst: 3, priority: 0 },
-      { pid: 3, arrival: 2, burst: 8, priority: 0 },
-      { pid: 4, arrival: 3, burst: 6, priority: 0 }
+      { pid: 1, arrival: 0, burst: 5, priority: 1 },
+      { pid: 2, arrival: 1, burst: 5, priority: 2 },
+      { pid: 3, arrival: 2, burst: 5, priority: 3 },
+      { pid: 4, arrival: 3, burst: 5, priority: 4 }
     ],
+    // Priority-friendly: all at 0, priority order clearly different from burst order
     [
       { pid: 1, arrival: 0, burst: 10, priority: 3 },
-      { pid: 2, arrival: 0, burst: 1, priority: 1 },
-      { pid: 3, arrival: 0, burst: 2, priority: 4 },
-      { pid: 4, arrival: 0, burst: 1, priority: 5 },
-      { pid: 5, arrival: 0, burst: 5, priority: 2 }
+      { pid: 2, arrival: 0, burst: 1,  priority: 1 },
+      { pid: 3, arrival: 0, burst: 2,  priority: 4 },
+      { pid: 4, arrival: 0, burst: 1,  priority: 5 },
+      { pid: 5, arrival: 0, burst: 5,  priority: 2 }
     ],
+    // Equal bursts, close arrivals
     [
       { pid: 1, arrival: 0, burst: 4, priority: 2 },
       { pid: 2, arrival: 1, burst: 4, priority: 3 },
       { pid: 3, arrival: 2, burst: 4, priority: 1 },
       { pid: 4, arrival: 3, burst: 4, priority: 4 }
+    ],
+    // Convoy: long job first, short ones pile up (FCFS worst-case, very visible)
+    [
+      { pid: 1, arrival: 0, burst: 12, priority: 3 },
+      { pid: 2, arrival: 1, burst: 2,  priority: 1 },
+      { pid: 3, arrival: 1, burst: 3,  priority: 2 },
+      { pid: 4, arrival: 2, burst: 1,  priority: 4 }
+    ],
+    // All arrive at 0, very different bursts → SJF/Priority pattern obvious
+    [
+      { pid: 1, arrival: 0, burst: 1,  priority: 4 },
+      { pid: 2, arrival: 0, burst: 3,  priority: 2 },
+      { pid: 3, arrival: 0, burst: 6,  priority: 1 },
+      { pid: 4, arrival: 0, burst: 10, priority: 3 },
+      { pid: 5, arrival: 0, burst: 2,  priority: 5 }
+    ],
+    // SRTF showcase: P1 gets preempted twice as shorter jobs arrive
+    [
+      { pid: 1, arrival: 0,  burst: 10, priority: 2 },
+      { pid: 2, arrival: 3,  burst: 4,  priority: 3 },
+      { pid: 3, arrival: 8,  burst: 2,  priority: 1 },
+      { pid: 4, arrival: 13, burst: 3,  priority: 4 }
+    ],
+    // Preemptive Priority showcase: high-priority arrivals interrupt running job
+    [
+      { pid: 1, arrival: 0, burst: 8, priority: 4 },
+      { pid: 2, arrival: 2, burst: 5, priority: 2 },
+      { pid: 3, arrival: 5, burst: 3, priority: 1 },
+      { pid: 4, arrival: 9, burst: 4, priority: 3 }
+    ],
+    // MLFQ showcase: one long job demotion visible, short ones stay in Q0
+    [
+      { pid: 1, arrival: 0, burst: 10, priority: 2 },
+      { pid: 2, arrival: 0, burst: 2,  priority: 3 },
+      { pid: 3, arrival: 4, burst: 3,  priority: 1 },
+      { pid: 4, arrival: 8, burst: 2,  priority: 4 }
+    ],
+    // Dense arrivals, varied bursts
+    [
+      { pid: 1, arrival: 0, burst: 7, priority: 1 },
+      { pid: 2, arrival: 1, burst: 2, priority: 3 },
+      { pid: 3, arrival: 2, burst: 5, priority: 2 },
+      { pid: 4, arrival: 4, burst: 3, priority: 4 },
+      { pid: 5, arrival: 6, burst: 4, priority: 2 }
     ]
   ];
 
