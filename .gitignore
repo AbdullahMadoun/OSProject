@@ -1,6 +1,7 @@
 build/
 cpu_scheduler
 .venv/
+.local/
 __pycache__/
 *.pyc
 *.pyo

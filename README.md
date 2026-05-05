@@ -91,7 +91,7 @@ Command-line options:
 
 ```text
 -f <file>     Load workload from file
--s <name>     Use sample workload: basic | rr | priority | edge
+-s <name>     Use sample workload: basic | rr | priority | edge | mixed
 -a <algo>     Algorithm: fcfs | sjf | rr | priority | srtf | priorityp | mlfq | all
 -q <int>      Time quantum for RR / MLFQ Q0 (default: 2)
 -o <int>      Context switch overhead in ms (default: 0)

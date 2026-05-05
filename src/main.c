@@ -12,7 +12,7 @@ static void print_usage(const char *prog)
     printf("Usage: %s [OPTIONS]\n\n", prog);
     printf("Options:\n");
     printf("  -f <file>     Load workload from file\n");
-    printf("  -s <name>     Use sample workload: basic | rr | priority | edge\n");
+    printf("  -s <name>     Use sample workload: basic | rr | priority | edge | mixed\n");
     printf("  -a <algo>     Algorithm: fcfs | sjf | srtf | rr | priority | priorityp | mlfq | all\n");
     printf("  -q <int>      Round Robin quantum (default: 2)\n");
     printf("  -o <int>      Context switch overhead (default: 0)\n");

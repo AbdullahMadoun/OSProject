@@ -15,10 +15,13 @@
 \usetikzlibrary{arrows.meta,positioning}
 \usepackage[hidelinks]{hyperref}
 
+\graphicspath{{reports/assets/}{assets/}}
+
 \definecolor{heading}{HTML}{1F4E79}
 \definecolor{lightgray}{HTML}{F5F7FA}
 \definecolor{codeborder}{HTML}{B8C2CC}
 \definecolor{success}{HTML}{1B7F4A}
+\definecolor{accent}{HTML}{EAF4FF}
 \definecolor{warning}{HTML}{A15C00}
 
 \lstdefinestyle{terminal}{
@@ -43,439 +46,520 @@
   showstringspaces=false
 }
 
-\newcommand{\statusdone}{\textcolor{success}{Implemented}}
-\newcommand{\statuspartial}{\textcolor{warning}{Partial}}
-\newcommand{\statusremaining}{\textcolor{warning}{Remaining}}
+\newcommand{\statusdone}{\textcolor{success}{Complete}}
+\newcommand{\statusnote}{\textcolor{warning}{Documented}}
 
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{0.55em}
 \renewcommand{\arraystretch}{1.17}
 
-\title{\textbf{Phase 2 Implementation and Progress Report}\\
-CPU Scheduling Simulator}
+\title{\textbf{Phase 3 Final Submission Report}\\
+CPU Scheduling Simulator Mini OS Component}
 \author{Operating Systems Project}
 \date{\today}
 
 \begin{document}
 \maketitle
 
-\section{Phase 2 Requirement Checklist}
-
-Phase 2 requires movement from design into working implementation. This
-submission satisfies the core requirement by providing a functional C
-implementation of the main CPU scheduling modules, test coverage for the core
-logic, an organized source tree, executable examples, a browser dashboard, and
-this progress report.
-
-\begin{longtable}{p{0.30\linewidth}p{0.16\linewidth}p{0.46\linewidth}}
+\begin{center}
+\begin{tabular}{ll}
 \toprule
-\textbf{Requirement} & \textbf{Status} & \textbf{Evidence in Repository} \\
+\textbf{Project} & CPU Scheduling Simulator \\
+\textbf{Phase} & Phase 3: Final Submission \\
+\textbf{Repository Scope} & Scheduler simulation, dashboard, reports, tests, and tooling \\
+\textbf{Main Language} & C11, with browser-side JavaScript dashboard tooling \\
+\textbf{Primary Build Command} & \texttt{make} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Final Submission Checklist}
+
+This Phase 3 submission is the complete, polished version of the CPU scheduling
+simulator proposed for the Operating Systems project. The project focuses on the
+CPU scheduler component of a mini operating system: it models process arrival,
+burst time, priority, ready-queue decisions, CPU idle periods, context-switch
+overhead, Gantt timelines, and scheduler performance metrics.
+
+\begin{longtable}{p{0.30\linewidth}p{0.18\linewidth}p{0.43\linewidth}}
+\toprule
+\textbf{Phase 3 Requirement} & \textbf{Status} & \textbf{Evidence} \\
 \midrule
-Partial implementation of core features & \statusdone & Four scheduling
-algorithms, workload parsing, simulation timeline generation, metric
-calculation, comparison mode, CSV export, tests, and dashboard are present. \\
-At least 50--70\% implemented & \statusdone & The project is approximately
-70\% complete. The core simulator is working; remaining work is final
-validation, polish, and report/PDF packaging. \\
-Progress report as PDF & \statusdone & The report source is
-\texttt{reports/phase2\_report.tex}. The compiled artifact is
-\texttt{reports/phase2\_report.pdf}. \\
-Brief recap of project idea & \statusdone & Section 2 summarizes the project
-goal and scope. \\
-What has been implemented so far & \statusdone & Section 3 lists implemented
-components and their current status. \\
-Updated system architecture & \statusdone & Section 4 includes the current
-architecture and module responsibilities. \\
-Screenshots of working system & \statusdone & Section 5 includes terminal
-evidence and dashboard screenshot references. \\
-Challenges faced & \statusdone & Section 6 documents implementation and
-validation challenges. \\
-Plan for completing remaining work & \statusdone & Section 7 lists the final
-project plan. \\
-Code submission & \statusdone & Section 8 describes the organized source
-structure and key files. \\
-Proper folder structure & \statusdone & Source, headers, tests, workloads,
-scripts, dashboard, fuzzing, and reports are separated. \\
-Comments in code & \statusdone & Public headers and selected implementation
-sections include comments where behavior is non-obvious. \\
+Complete working project & \statusdone & C simulator builds with
+\texttt{make}; all seven planned schedulers run from the CLI and the browser
+dashboard. \\
+All planned features working & \statusdone & FCFS, SJF, RR, Priority, SRTF,
+Preemptive Priority, and MLFQ are implemented in C and mirrored in the
+dashboard. \\
+Proper integration & \statusdone & Input loading, scheduler dispatch, Gantt
+timeline generation, metrics, visualization, and CSV export share one data
+model. \\
+Detailed final report PDF & \statusdone & This source file is the final report
+source; it includes design, implementation, testing, screenshots, and future
+work. \\
+Clean code submission & \statusdone & Source is separated into
+\texttt{include/}, \texttt{src/}, \texttt{tests/}, \texttt{dashboard/},
+\texttt{scripts/}, \texttt{fuzz/}, \texttt{workloads/}, and \texttt{reports/}. \\
+README documentation & \statusdone & \texttt{README.md} documents
+requirements, build steps, run commands, workload format, algorithms, tests,
+dashboard usage, and grading flow. \\
+Screenshots and output evidence & \statusdone & Section~\ref{sec:results}
+contains live CLI output summaries, CSV evidence, and dashboard screenshots. \\
+Validation evidence & \statusdone & \texttt{make test} passes all C and Python
+tests; an AddressSanitizer/UndefinedBehaviorSanitizer test build also passed. \\
 \bottomrule
 \end{longtable}
 
-\section{Project Recap}
+\section{Introduction}
 
-The project is a CPU scheduling simulator for an Operating Systems course. It
-models a set of processes with arrival time, burst time, and priority, then
-runs scheduling algorithms to show how process order affects waiting time,
-turnaround time, response time, CPU utilization, throughput, and context
-switching.
+CPU scheduling is one of the most visible responsibilities of an operating
+system. It decides which ready process receives CPU time, when a process should
+wait, and how policy choices affect response time, fairness, throughput, and
+CPU utilization. This project turns those scheduler rules into an executable
+simulator so that students can test workloads and see the consequences of each
+algorithm.
 
-The implemented simulator supports:
+The final project contains two user-facing interfaces:
 
 \begin{itemize}
-  \item First-Come, First-Served (FCFS)
-  \item non-preemptive Shortest Job First (SJF)
-  \item Round Robin with configurable quantum
-  \item non-preemptive priority scheduling
+  \item a C command-line simulator for reproducible scheduler runs, CSV export,
+  and automated tests;
+  \item a no-build browser dashboard for interactive demonstration, teaching,
+  visualization, and project presentation.
 \end{itemize}
 
-The project is intentionally focused on operating-system scheduling behavior.
-Earlier experimental prediction and cloud inference files were removed during
-final Phase 2 cleanup so the repository now matches the scheduler-only project
-scope.
+\section{Problem Statement and Motivation}
 
-\section{Implemented So Far}
+Scheduling algorithms are easy to describe in class but difficult to compare
+without a working execution model. A small change in arrival order, quantum,
+priority, or context-switch overhead can change waiting time and response time
+significantly. Manual calculations are also error-prone, especially for
+preemptive algorithms.
 
-The current implementation is approximately 70\% complete. The core simulator
-is working and organized, but final submission still needs stronger validation
-evidence such as Valgrind or sanitizer logs, longer fuzzing results, and final
-PDF packaging.
+The project solves this by providing a deterministic simulator that:
 
-\begin{longtable}{p{0.25\linewidth}p{0.16\linewidth}p{0.50\linewidth}}
-\toprule
-\textbf{Component} & \textbf{Status} & \textbf{Implemented Behavior} \\
-\midrule
-Process model & \statusdone & \texttt{Process} stores PID, arrival time,
-burst time, priority, remaining time, state, start time, completion time,
-waiting time, turnaround time, and response time. \\
-Process reset & \statusdone & Before every algorithm run, simulation-only
-fields are reset so comparison mode does not reuse stale timing state. \\
-Input parser & \statusdone & Loads workload files and in-memory workload
-buffers. It accepts comments and blank lines, then validates
-\texttt{pid arrival burst priority}. \\
-Input validation & \statusdone & Rejects duplicate PIDs, non-positive burst
-time, negative arrival time, negative priority, extra tokens, malformed
-records, and embedded NUL bytes. \\
-Built-in samples & \statusdone & Provides \texttt{basic}, \texttt{rr},
-\texttt{priority}, and \texttt{edge} workloads for quick testing. \\
-Simulation engine & \statusdone & Initializes results, appends Gantt entries,
-merges adjacent entries for the same PID, tracks idle time, and finalizes total
-runtime. \\
-FCFS & \statusdone & Sorts by arrival time and PID, runs each process to
-completion, and records idle gaps when no process is ready. \\
-SJF & \statusdone & Uses a min-heap to select the shortest arrived process in
-non-preemptive order with deterministic tie-breaking. \\
-Round Robin & \statusdone & Uses a FIFO ready queue, configurable quantum,
-arrival handling during each quantum, requeueing, and context-switch counting. \\
-Priority & \statusdone & Uses a min-heap ordered by priority, then arrival and
-PID. Lower priority number means higher priority. \\
-Metrics & \statusdone & Computes waiting time, turnaround time, response time,
-CPU utilization, throughput, context switches, and total time. \\
-Terminal visualization & \statusdone & Prints colored Gantt charts, process
-metric tables, aggregate summaries, and all-algorithm comparison tables. \\
-CSV export & \statusdone & Writes one row per algorithm run with workload
-summary columns and aggregate metrics. \\
-Browser dashboard & \statusdone & Provides a static browser interface with
-editable processes, sample workloads, algorithm selection, Gantt charts, metric
-cards, and comparison views. \\
-CSV dashboard generator & \statusdone & \texttt{scripts/visualize\_runs.py}
-turns exported CSV rows into a standalone HTML dashboard. \\
-OS process logger & \statuspartial & Samples local processes and maps CPU
-activity into simulator workloads. This is useful for experimentation, not a
-claim that the real OS scheduler is reproduced. \\
-C tests & \statusdone & Tests cover process behavior, parser validation, FIFO
-queue, heap ordering, every scheduler, and metrics formulas. \\
-Python helper tests & \statusdone & Tests cover CSV dashboard parsing,
-summary aggregation, HTML report content, and simulator CSV export. \\
-Fuzzing harnesses & \statuspartial & AFL++ parser and queue harnesses exist
-with seed corpora and dictionary files. Long campaign evidence remains to be
-added. \\
-Memory validation & \statusremaining & Valgrind or equivalent sanitizer proof
-has not yet been recorded in the repository. \\
-\bottomrule
-\end{longtable}
+\begin{itemize}
+  \item accepts process workloads using the format \texttt{pid arrival burst priority};
+  \item runs multiple scheduler policies over the same workload;
+  \item produces Gantt timelines and per-process timing fields;
+  \item computes aggregate metrics for objective comparison;
+  \item exports CSV rows for report generation and later analysis;
+  \item provides an interactive dashboard so the system can be demonstrated
+  clearly during presentation.
+\end{itemize}
 
-\section{Updated System Architecture}
+\section{System Design}
 
-The system is organized into small C modules with a single command-line
-entrypoint. The core flow is shown below.
+\subsection{High-Level Architecture}
+
+The final system uses a small layered architecture. The CLI and dashboard are
+separate interfaces, but they implement the same scheduling rules and compare
+the same metrics.
 
 \begin{center}
 \resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[
-  node distance=0.82cm and 1.1cm,
+  node distance=0.9cm and 1.1cm,
   box/.style={
+    rectangle,
+    rounded corners=2pt,
+    draw=heading,
+    fill=accent,
+    very thick,
+    align=center,
+    minimum width=3.15cm,
+    minimum height=0.9cm
+  },
+  wide/.style={
     rectangle,
     rounded corners=2pt,
     draw=heading,
     fill=lightgray,
     very thick,
     align=center,
-    minimum width=3.1cm,
+    minimum width=4.4cm,
     minimum height=0.9cm
   },
   arrow/.style={-Latex, thick, draw=heading}
 ]
 \node[box] (cli) {CLI\\\texttt{src/main.c}};
-\node[box, below=of cli] (input) {Workload Loader\\\texttt{src/input.c}};
-\node[box, below=of input] (dispatch) {Dispatcher\\\texttt{schedule()}};
+\node[box, right=of cli] (dash) {Browser Dashboard\\\texttt{dashboard/}};
+\node[wide, below=of cli, xshift=2.15cm] (input) {Workload Loading and Validation\\\texttt{src/input.c}};
+\node[wide, below=of input] (dispatch) {Scheduler Dispatcher\\\texttt{schedule()}};
 
-\node[box, below left=of dispatch, xshift=-1.9cm] (fcfs) {FCFS};
-\node[box, below=of dispatch] (sjf) {SJF};
-\node[box, below right=of dispatch, xshift=1.9cm] (rr) {Round Robin};
-\node[box, right=of rr, xshift=1.3cm] (prio) {Priority};
+\node[box, below left=of dispatch, xshift=-2.7cm] (nonpre) {Non-preemptive\\FCFS, SJF, Priority};
+\node[box, below=of dispatch] (pre) {Preemptive\\SRTF, P-Priority};
+\node[box, below right=of dispatch, xshift=2.7cm] (rr) {Time-Sliced\\RR, MLFQ};
 
-\node[box, below=1.2cm of sjf] (timeline) {Simulation Result\\Gantt Timeline};
-\node[box, below left=of timeline, xshift=-0.8cm] (metrics) {Metrics Engine\\\texttt{src/metrics.c}};
-\node[box, below right=of timeline, xshift=0.8cm] (output) {Terminal Output\\CSV Export};
-\node[box, below=of output] (dash) {Optional Dashboards\\HTML/Browser};
+\node[wide, below=1.1cm of pre] (timeline) {Gantt Timeline and Idle Segments\\\texttt{src/sim\_engine.c}};
+\node[wide, below left=of timeline, xshift=-1.1cm] (metrics) {Metrics Engine\\\texttt{src/metrics.c}};
+\node[wide, below right=of timeline, xshift=1.1cm] (output) {Terminal Tables, CSV Export, HTML Reports};
 
 \draw[arrow] (cli) -- (input);
+\draw[arrow] (dash) -- (input);
 \draw[arrow] (input) -- (dispatch);
-\draw[arrow] (dispatch) -- (fcfs);
-\draw[arrow] (dispatch) -- (sjf);
+\draw[arrow] (dispatch) -- (nonpre);
+\draw[arrow] (dispatch) -- (pre);
 \draw[arrow] (dispatch) -- (rr);
-\draw[arrow] (dispatch) -- (prio);
-\draw[arrow] (fcfs) |- (timeline);
-\draw[arrow] (sjf) -- (timeline);
+\draw[arrow] (nonpre) |- (timeline);
+\draw[arrow] (pre) -- (timeline);
 \draw[arrow] (rr) |- (timeline);
-\draw[arrow] (prio) |- (timeline);
 \draw[arrow] (timeline) -- (metrics);
 \draw[arrow] (metrics) -- (output);
-\draw[arrow] (output) -- (dash);
 \end{tikzpicture}
 }
 \end{center}
 
-\subsection{Module Responsibilities}
+\subsection{Module Explanation}
 
-\begin{longtable}{p{0.27\linewidth}p{0.62\linewidth}}
+\begin{longtable}{p{0.28\linewidth}p{0.60\linewidth}}
 \toprule
 \textbf{Module} & \textbf{Responsibility} \\
 \midrule
-\texttt{src/main.c} & Parses command-line flags, selects workload source,
-selects one algorithm or comparison mode, invokes the scheduler, and handles
-CSV export. \\
-\texttt{src/input.c} & Loads workload files, parses in-memory buffers, skips
-comments/blanks, and validates process records. \\
-\texttt{src/process.c} & Initializes process structs and resets timing/state
-fields before each run. \\
-\texttt{src/queue.c} & Implements FIFO queue behavior for Round Robin and
-min-heap behavior for SJF and priority scheduling. \\
-\texttt{src/sim\_engine.c} & Stores the Gantt timeline and computes idle and
-total runtime. \\
-\texttt{src/schedulers/*.c} & Implements each scheduling policy. \\
-\texttt{src/metrics.c} & Computes process metrics, aggregate metrics, workload
-summary values, and CSV output. \\
-\texttt{src/visualization.c} & Prints Gantt charts, per-process tables,
-aggregate metrics, and comparison tables. \\
-\texttt{dashboard/} & Provides a no-build browser dashboard for interactive
-simulation and visualization. \\
-\texttt{scripts/} & Provides helper scripts for CSV visualization and local OS
-process sampling. \\
+\texttt{include/} & Public data structures, constants, and module contracts. \\
+\texttt{src/main.c} & Parses CLI flags, selects workload input, chooses one
+algorithm or all-algorithm comparison, and controls CSV export. \\
+\texttt{src/input.c} & Loads built-in samples, workload files, and in-memory
+payloads. It rejects duplicate PIDs, invalid times, invalid bursts, malformed
+records, extra tokens, and NUL bytes. \\
+\texttt{src/process.c} & Initializes process records and resets simulation
+state before each algorithm run. \\
+\texttt{src/queue.c} & Provides FIFO queue operations and heap-style priority
+selection helpers used by schedulers. \\
+\texttt{src/sim\_engine.c} & Stores Gantt entries, merges adjacent segments,
+tracks idle time, and finalizes total runtime. \\
+\texttt{src/schedulers/} & Contains the seven scheduler implementations:
+FCFS, SJF, RR, Priority, SRTF, Preemptive Priority, and MLFQ. \\
+\texttt{src/metrics.c} & Computes waiting, turnaround, response, CPU
+utilization, throughput, context switches, and CSV rows. \\
+\texttt{src/visualization.c} & Prints terminal Gantt charts, per-process
+tables, aggregate summaries, and all-algorithm comparisons. \\
+\texttt{dashboard/} & Static HTML/CSS/JavaScript dashboard with editable
+workloads, Gantt playback, metrics cards, comparison charts, race mode,
+interactive quiz, and kiosk mode. \\
+\texttt{scripts/} & Includes CSV-to-HTML report generation and a local process
+logger that can turn observed CPU activity into simulator workloads. \\
+\texttt{fuzz/} & AFL++ harnesses, dictionaries, and seed corpora for parser and
+queue robustness testing. \\
 \bottomrule
 \end{longtable}
 
-\section{Screenshots and Working Evidence}
+\section{Implementation Details}
 
-The repository includes static dashboard screenshots under
-\texttt{stitch\_cpu\_scheduling\_simulator/}. The report also includes terminal
-output snippets because the C simulator itself is a command-line program.
+\subsection{Input Model}
 
-\subsection{Terminal Simulator: All Algorithms}
+Each workload line uses exactly four integer fields:
 
-\begin{lstlisting}[style=terminal,caption={Command: ./cpu\_scheduler -s basic -a all}]
-Gantt chart
-| P1 0-8 || P2 8-12 || P3 12-21 || P4 21-26 |
-
-Metrics for fcfs
-PID ARR BUR PRI START DONE WAIT TURN RESP
-  1   0   8   3     0    8    0    8    0
-  2   1   4   1     8   12    7   11    7
-  3   2   9   4    12   21   10   19   10
-  4   3   5   2    21   26   18   23   18
-avg_wait=8.75 avg_turn=15.25 avg_resp=8.75 util=1.00 thr=0.15 ctx=0 total=26
-
-Comparison
-algo             wait       turn       resp       util        thr        ctx
-fcfs             8.75      15.25       8.75       1.00       0.15          0
-sjf              7.75      14.25       7.75       1.00       0.15          0
-rr              12.75      19.25       2.00       1.00       0.15         12
-priority         7.75      14.25       7.75       1.00       0.15          0
+\begin{lstlisting}[style=code]
+pid arrival burst priority
 \end{lstlisting}
 
-\subsection{Terminal Simulator: Round Robin}
-
-\begin{lstlisting}[style=terminal,caption={Command: ./cpu\_scheduler -f workloads/sample\_rr.txt -a rr -q 4}]
-Gantt chart
-| P1 0-4 || P2 4-7 || P3 7-10 || P1 10-30 |
-Ticks: 0 5 10 15 20 25 30
-
-Metrics for rr
-PID ARR BUR PRI START DONE WAIT TURN RESP
-  1   0  24   0     0   30    6   30    0
-  2   0   3   0     4    7    4    7    4
-  3   0   3   0     7   10    7   10    7
-avg_wait=5.67 avg_turn=15.67 avg_resp=3.67 util=1.00 thr=0.10 ctx=3 total=30
-\end{lstlisting}
-
-\subsection{Browser Dashboard Screenshot}
-
-\begin{figure}[H]
-  \centering
-  \IfFileExists{stitch_cpu_scheduling_simulator/metrics_dashboard/screen.png}{%
-    \includegraphics[width=0.92\linewidth]{stitch_cpu_scheduling_simulator/metrics_dashboard/screen.png}
-  }{%
-    \fbox{\parbox{0.86\linewidth}{Dashboard screenshot file not found.}}
-  }
-  \caption{Metrics dashboard design for comparing scheduler output.}
-\end{figure}
-
-\begin{figure}[H]
-  \centering
-  \IfFileExists{stitch_cpu_scheduling_simulator/gantt_chart_visualization/screen.png}{%
-    \includegraphics[width=0.92\linewidth]{stitch_cpu_scheduling_simulator/gantt_chart_visualization/screen.png}
-  }{%
-    \fbox{\parbox{0.86\linewidth}{Gantt chart screenshot file not found.}}
-  }
-  \caption{Gantt chart visualization for scheduler timeline output.}
-\end{figure}
-
-\subsection{Test Evidence}
-
-\begin{lstlisting}[style=terminal,caption={Validated command: make test}]
-test_process:  PASS 19/19 passed
-test_queue:    PASS 22/22 passed
-test_input:    PASS 21/21 passed
-test_fcfs:     PASS 19/19 passed
-test_sjf:      PASS 12/12 passed
-test_rr:       PASS  9/9 passed
-test_priority: PASS  8/8 passed
-test_metrics:  PASS 13/13 passed
-pytest tests_py: 7 passed
-\end{lstlisting}
-
-\section{Challenges Faced}
+The validation rules are:
 
 \begin{itemize}
-  \item \textbf{Consistent process timing:} Each algorithm updates start time,
-  completion time, response time, and remaining time differently. A shared
-  reset path was needed so comparison mode could run algorithms back-to-back.
-
-  \item \textbf{Deterministic tie-breaking:} Scheduling algorithms can produce
-  ambiguous results when several processes arrive together or share the same
-  burst/priority. The implementation uses stable tie-breakers so tests and
-  reports are reproducible.
-
-  \item \textbf{Round Robin queue order:} Round Robin must add processes that
-  arrive during a time slice and then decide whether to requeue the current
-  process. That ordering affects response time, waiting time, and context
-  switch counts.
-
-  \item \textbf{Input validation:} The parser must handle normal workloads and
-  malformed inputs without crashing. This required explicit rejection of bad
-  integer fields, duplicate PIDs, invalid burst values, extra tokens, and NUL
-  bytes.
-
-  \item \textbf{Metric correctness:} Waiting time, turnaround time, and
-  response time are easy to mix up. Tests were added around the formulas to
-  keep output consistent.
-
-  \item \textbf{Scope control:} A previous experimental prediction layer made
-  the project look less focused. It has now been removed so the repository
-  directly supports the Operating Systems Phase 2 requirements.
-
-  \item \textbf{Validation gap:} Unit tests cover the main behavior, but they
-  are not a proof of correctness for every possible workload. Fuzzing and
-  memory-check evidence still need to be run and documented.
+  \item PID must be positive and unique;
+  \item arrival time must be non-negative;
+  \item burst time must be positive;
+  \item priority must be non-negative;
+  \item lower priority number means higher scheduling priority.
 \end{itemize}
 
-\section{Plan for Completing Remaining Work}
+The simulator can load a workload from a file with \texttt{-f} or from a
+compiled-in sample with \texttt{-s basic}, \texttt{-s rr},
+\texttt{-s priority}, \texttt{-s edge}, or \texttt{-s mixed}.
 
-\begin{enumerate}
-  \item Compile this LaTeX file into the final Phase 2 PDF and include it with
-  the code submission.
+\subsection{Implemented Scheduling Algorithms}
 
-  \item Run `make clean`, `make`, `make test-c`, and Python helper tests in the
-  target grading environment, then record the exact output.
+\begin{longtable}{p{0.22\linewidth}p{0.15\linewidth}p{0.52\linewidth}}
+\toprule
+\textbf{Algorithm} & \textbf{CLI Key} & \textbf{Final Behavior} \\
+\midrule
+First-Come, First-Served & \texttt{fcfs} & Non-preemptive. Sorts by arrival
+time, then PID, and runs each process to completion. \\
+Shortest Job First & \texttt{sjf} & Non-preemptive. Selects the arrived
+process with the shortest burst; ties use burst, arrival, then PID. \\
+Round Robin & \texttt{rr} & Preemptive by quantum. Uses a FIFO ready queue and
+requeues unfinished processes after arrivals from the current quantum are
+added. \\
+Priority & \texttt{priority} & Non-preemptive. Selects the lowest priority
+number; ties use arrival, then PID. \\
+Shortest Remaining Time First & \texttt{srtf} & Preemptive SJF. At each event,
+selects the ready process with the shortest remaining time. \\
+Preemptive Priority & \texttt{priorityp} & Preempts when a higher-priority
+process arrives; ties use arrival, then PID. \\
+Multilevel Feedback Queue & \texttt{mlfq} & Three queues. New arrivals enter
+Q0; processes that consume a quantum are demoted; lower queues use longer or
+FCFS-style execution. \\
+\bottomrule
+\end{longtable}
 
-  \item Add more tests for large workloads, maximum process count boundaries,
-  context-switch overhead, CSV comparison output, and invalid command-line
-  arguments.
+All seven schedulers now apply \texttt{ctx\_overhead}. When execution switches
+to a different PID, the simulator inserts an idle Gantt segment equal to the
+configured overhead. This lets the project demonstrate the cost of context
+switching, not only the logical order of process execution.
 
-  \item Standardize context-switch overhead across all algorithms. Currently
-  FCFS and Round Robin consider overhead more directly than SJF and priority.
+\subsection{Metrics}
 
-  \item Run Valgrind or an equivalent sanitizer pass and add the result to the
-  final report.
+The simulator computes the standard CPU scheduling metrics:
 
-  \item Run AFL++ parser and queue campaigns for a documented duration, then
-  save summary stats and any minimized reproducers.
+\begin{lstlisting}[style=code]
+turnaround = completion - arrival
+waiting    = turnaround - burst
+response   = first_start - arrival
+util       = busy_time / total_time
+throughput = completed_processes / total_time
+\end{lstlisting}
 
-  \item Capture final screenshots from the actual dashboard and terminal output
-  if the submission platform requires image files instead of report snippets.
+The aggregate metrics are exported to CSV with one row per algorithm, so the
+same run can be visualized in terminal output, the browser dashboard, or the
+standalone HTML report generator.
 
-  \item Review all source comments for clarity and add comments only where the
-  scheduling or validation logic is not obvious.
-\end{enumerate}
+\section{Tools and Technologies}
 
-\section{Code Submission Organization}
+\begin{longtable}{p{0.27\linewidth}p{0.60\linewidth}}
+\toprule
+\textbf{Tool} & \textbf{Use in Project} \\
+\midrule
+C11 and \texttt{make} & Main simulator implementation, deterministic tests,
+and final build flow. \\
+Python 3 and \texttt{pytest} & Helper script tests and CSV report validation. \\
+HTML, CSS, JavaScript & No-build dashboard that reimplements the scheduler
+rules for live visualization. \\
+AFL++ harnesses & Fuzz targets for parser and queue robustness campaigns. \\
+Clang sanitizers & AddressSanitizer and UndefinedBehaviorSanitizer validation
+used during final verification. \\
+Tectonic 0.16.9 & Local LaTeX compiler installed for report PDF generation. \\
+\texttt{scripts/visualize\_runs.py} & Converts simulator CSV exports into a
+standalone HTML report. \\
+\bottomrule
+\end{longtable}
 
-The repository is organized as follows:
+\section{Results and Testing}
+\label{sec:results}
+
+\subsection{Automated Test Results}
+
+The final verification run was:
+
+\begin{lstlisting}[style=terminal,caption={Final command: make test}]
+test_process: 19/19 passed
+test_queue:   22/22 passed
+test_input:   22/22 passed
+test_fcfs:    19/19 passed
+test_sjf:     17/17 passed
+test_rr:       9/9 passed
+test_priority:13/13 passed
+test_srtf:    All SRTF tests passed
+test_priority_p: All Preemptive Priority tests passed
+test_mlfq:    All MLFQ tests passed
+test_metrics: 13/13 passed
+pytest tests_py: 8 passed
+\end{lstlisting}
+
+A second verification pass built the project with Clang
+AddressSanitizer and UndefinedBehaviorSanitizer enabled, then ran the same
+\texttt{make test} flow successfully. This provides memory-error and undefined
+behavior coverage beyond normal unit-test assertions.
+
+\subsection{Algorithm Comparison Output}
+
+The following comparison was produced from:
+\texttt{./cpu\_scheduler -s basic -a all}.
+
+\begin{center}
+\begin{tabular}{lrrrrrr}
+\toprule
+\textbf{Algorithm} & \textbf{Wait} & \textbf{Turn} & \textbf{Resp} &
+\textbf{Util} & \textbf{Thr} & \textbf{Ctx} \\
+\midrule
+FCFS & 8.75 & 15.25 & 8.75 & 1.00 & 0.15 & 0 \\
+SJF & 7.75 & 14.25 & 7.75 & 1.00 & 0.15 & 0 \\
+RR & 12.75 & 19.25 & 2.00 & 1.00 & 0.15 & 12 \\
+Priority & 7.75 & 14.25 & 7.75 & 1.00 & 0.15 & 0 \\
+SRTF & 6.50 & 13.00 & 4.25 & 1.00 & 0.15 & 4 \\
+Preemptive Priority & 6.50 & 13.00 & 4.25 & 1.00 & 0.15 & 4 \\
+MLFQ & 13.00 & 19.50 & 1.50 & 1.00 & 0.15 & 9 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+For this workload, SRTF and Preemptive Priority produce the lowest average
+waiting and turnaround times. MLFQ gives the fastest first response, while
+Round Robin improves response compared with non-preemptive policies at the
+cost of more context switches.
+
+\subsection{CSV Export Evidence}
+
+The command below generated \texttt{reports/assets/phase3\_results\_final.csv}
+with correct labels for every algorithm:
 
 \begin{lstlisting}[style=terminal]
-include/              Public C headers
-src/                  C simulator implementation
-src/schedulers/       FCFS, SJF, Round Robin, and priority schedulers
-tests/                C unit tests
-tests_py/             Python tests for helper scripts and CSV export
-workloads/            Sample scheduler workloads
-dashboard/            Static browser dashboard
-scripts/              CSV dashboard generator and process logger
-fuzz/                 AFL++ harnesses, dictionaries, and seed corpora
-reports/              Phase report source
-Makefile              Build, test, and fuzz commands
-README.md             Grader-facing instructions
-DASHBOARD_SPEC.md     Dashboard feature and design specification
+./cpu_scheduler -s basic -a all -e reports/assets/phase3_results_final.csv
+python3 scripts/visualize_runs.py reports/assets/phase3_results_final.csv \
+  -o reports/assets/phase3_results_final.html
 \end{lstlisting}
 
-\subsection{Main C Files}
+\begin{lstlisting}[style=terminal,caption={CSV rows generated by the final simulator}]
+algo,avg_waiting,avg_turnaround,avg_response,cpu_utilization,context_switches
+fcfs,8.750000,15.250000,8.750000,1.000000,0
+sjf,7.750000,14.250000,7.750000,1.000000,0
+rr,12.750000,19.250000,2.000000,1.000000,12
+priority,7.750000,14.250000,7.750000,1.000000,0
+srtf,6.500000,13.000000,4.250000,1.000000,4
+priorityp,6.500000,13.000000,4.250000,1.000000,4
+mlfq,13.000000,19.500000,1.500000,1.000000,9
+\end{lstlisting}
 
-\begin{longtable}{p{0.32\linewidth}p{0.55\linewidth}}
+\subsection{Dashboard Screenshots}
+
+\begin{figure}[H]
+  \centering
+  \IfFileExists{reports/assets/dashboard_phase3_gantt_scrolled.png}{%
+    \includegraphics[width=0.92\linewidth]{reports/assets/dashboard_phase3_gantt_scrolled.png}
+  }{%
+    \fbox{\parbox{0.86\linewidth}{Dashboard Gantt screenshot file not found.}}
+  }
+  \caption{Live browser dashboard showing the Gantt timeline for the active
+  workload.}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \IfFileExists{reports/assets/dashboard_phase3_metrics.png}{%
+    \includegraphics[width=0.92\linewidth]{reports/assets/dashboard_phase3_metrics.png}
+  }{%
+    \fbox{\parbox{0.86\linewidth}{Dashboard metrics screenshot file not found.}}
+  }
+  \caption{Live browser dashboard showing aggregate metrics and process
+  execution details.}
+\end{figure}
+
+\section{Challenges and Solutions}
+
+\begin{longtable}{p{0.31\linewidth}p{0.57\linewidth}}
 \toprule
-\textbf{File} & \textbf{Purpose} \\
+\textbf{Challenge} & \textbf{Solution} \\
 \midrule
-\texttt{include/process.h} and \texttt{src/process.c} & Process data model,
-initialization, reset, and state labels. \\
-\texttt{include/input.h} and \texttt{src/input.c} & Workload loading,
-in-memory parsing, built-in samples, and validation. \\
-\texttt{include/queue.h} and \texttt{src/queue.c} & FIFO queue and min-heap
-support structures used by schedulers. \\
-\texttt{include/scheduler.h} and \texttt{src/schedulers/*.c} & Scheduler
-dispatch and algorithm implementations. \\
-\texttt{include/sim\_engine.h} and \texttt{src/sim\_engine.c} & Gantt timeline
-storage, idle time, and total runtime finalization. \\
-\texttt{include/metrics.h} and \texttt{src/metrics.c} & Metric formulas,
-process table output, workload summaries, and CSV export. \\
-\texttt{include/visualization.h} and \texttt{src/visualization.c} & Terminal
-Gantt chart, metric summary, and comparison table rendering. \\
-\texttt{src/main.c} & CLI option parsing, workload selection, algorithm
-execution, comparison mode, and CSV output. \\
+Keeping comparison mode deterministic & Every scheduler resets process state
+before running and uses deterministic tie-breakers based on arrival time and
+PID. \\
+Correct preemption behavior & SRTF, Preemptive Priority, and MLFQ are
+implemented as event-aware schedulers that reconsider execution at arrivals,
+completions, and quantum boundaries. \\
+Round Robin queue ordering & The ready queue adds newly arrived processes
+before requeueing the unfinished running process, matching the documented
+project rule. \\
+Context-switch overhead & All seven schedulers insert idle Gantt segments when
+execution switches to a different PID, so overhead affects both total time and
+metrics. \\
+Parser robustness & The input parser rejects malformed workloads, extra
+tokens, duplicate PIDs, NUL bytes, invalid bursts, and invalid negative fields. \\
+Keeping dashboard and C behavior aligned & The dashboard JavaScript mirrors
+the documented scheduler rules and is checked against the same sample
+workloads and expected metric behavior. \\
+Final documentation drift & The final pass updated the report, README-visible
+sample list, CSV labels, and tests so submitted documentation matches the
+current implementation. \\
 \bottomrule
 \end{longtable}
 
-\subsection{Audit Result}
+\section{Future Improvements}
 
-The final Phase 2 cleanup removed the underlying prediction code and remote
-inference support from the repository. The active source tree no longer
-contains the former model training files, prediction server, or model artifact.
-The command-line interface also no longer exposes the old prediction flag.
-
-The remaining Python code is helper tooling for this OS project:
+The project is complete for Phase 3, but these extensions would make it more
+advanced:
 
 \begin{itemize}
-  \item \texttt{scripts/visualize\_runs.py}: builds HTML reports from simulator
-  CSV output.
-  \item \texttt{scripts/os\_process\_logger.py}: generates experimental
-  simulator workloads from local process CPU samples.
-  \item \texttt{tests\_py/}: verifies helper script behavior and CSV export.
+  \item add optional aging to Priority and MLFQ to reduce starvation;
+  \item add a batch workload generator for larger performance studies;
+  \item save full AFL++ campaign outputs and crash-replay evidence in a
+  dedicated validation folder;
+  \item export dashboard sessions as JSON so a presentation demo can be replayed
+  exactly;
+  \item add more command-line tests for invalid flags and boundary-sized
+  workloads.
 \end{itemize}
+
+\section{Team Contribution}
+
+The repository does not contain the official team member names or IDs. Replace
+the placeholder rows below with the final group information before submitting
+the PDF.
+
+\begin{longtable}{p{0.26\linewidth}p{0.20\linewidth}p{0.43\linewidth}}
+\toprule
+\textbf{Member} & \textbf{ID} & \textbf{Contribution} \\
+\midrule
+Member 1 & Student ID & Core C simulator, scheduler implementation, and CLI
+integration. \\
+Member 2 & Student ID & Browser dashboard, visualization, and interactive
+presentation features. \\
+Member 3 & Student ID & Test coverage, validation scripts, report writing, and
+submission packaging. \\
+\bottomrule
+\end{longtable}
+
+\section{Code Submission and Running Instructions}
+
+\subsection{Requirements}
+
+\begin{itemize}
+  \item C compiler with C11 support;
+  \item \texttt{make};
+  \item Python 3 for helper scripts and Python tests;
+  \item optional \texttt{pytest}, \texttt{psutil}, AFL++, and sanitizer-capable
+  Clang for extended validation.
+\end{itemize}
+
+\subsection{Build and Test}
+
+\begin{lstlisting}[style=terminal]
+make
+make test-c
+python3 -m pytest -q tests_py
+make test
+\end{lstlisting}
+
+\subsection{Run the Simulator}
+
+\begin{lstlisting}[style=terminal]
+./cpu_scheduler -s basic -a all
+./cpu_scheduler -f workloads/sample_rr.txt -a rr -q 4
+./cpu_scheduler -s basic -a srtf -o 1
+./cpu_scheduler -s mixed -a mlfq -q 2
+./cpu_scheduler -s basic -a all -e results.csv
+\end{lstlisting}
+
+\subsection{Open the Browser Dashboard}
+
+\begin{lstlisting}[style=terminal]
+cd dashboard
+python3 -m http.server 8080
+\end{lstlisting}
+
+Then open \texttt{http://localhost:8080}. The dashboard can also be opened
+directly from \texttt{dashboard/index.html}.
+
+\subsection{Generate the PDF Report}
+
+A local Tectonic compiler was installed for this final submission. From the
+repository root:
+
+\begin{lstlisting}[style=terminal]
+.local/bin/tectonic reports/phase2_report.tex --outdir reports
+\end{lstlisting}
+
+The source filename is kept as \texttt{phase2\_report.tex} because it was the
+existing report file in the repository, but the report content is now the
+Phase 3 final submission.
 
 \section{Conclusion}
 
-Phase 2 now contains a working implementation of the core CPU scheduling
-simulator. The project has the main scheduling algorithms, input validation,
-timeline generation, metrics, terminal output, CSV export, browser
-visualization, helper scripts, and tests. The remaining work is mostly final
-validation and submission polish rather than core implementation.
+The Phase 3 project is a complete CPU scheduling simulator mini OS component.
+It includes seven scheduling algorithms, workload validation, reusable process
+and queue structures, deterministic Gantt timeline generation, metrics,
+terminal output, CSV export, a standalone CSV dashboard generator, an
+interactive browser dashboard, fuzzing harnesses, and automated tests. The
+final verification passes both normal and sanitizer-enabled test runs, and the
+report now documents the final state required for submission.
 
 \end{document}

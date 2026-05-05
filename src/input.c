@@ -36,6 +36,15 @@ static const SampleProc SAMPLE_EDGE[] = {
     {1, 5, 3, 0}
 };
 
+static const SampleProc SAMPLE_MIXED[] = {
+    {1, 0, 6, 3},
+    {2, 2, 2, 1},
+    {3, 4, 8, 4},
+    {4, 5, 3, 2},
+    {5, 8, 5, 1},
+    {6, 10, 1, 5}
+};
+
 static int load_sample_array(const SampleProc *src, int count, Process *procs,
                              int max_procs)
 {
@@ -278,6 +287,9 @@ int input_load_sample(const char *name, Process *procs, int max_procs)
     }
     if (strcmp(name, "edge") == 0) {
         return load_sample_array(SAMPLE_EDGE, 1, procs, max_procs);
+    }
+    if (strcmp(name, "mixed") == 0) {
+        return load_sample_array(SAMPLE_MIXED, 6, procs, max_procs);
     }
 
     fprintf(stderr, "input_load_sample: unknown sample '%s'\n", name);

@@ -42,6 +42,12 @@ static const char *metrics_algo_label(SchedAlgo algo)
         return "rr";
     case ALGO_PRIORITY:
         return "priority";
+    case ALGO_SRTF:
+        return "srtf";
+    case ALGO_PRIORITY_P:
+        return "priorityp";
+    case ALGO_MLFQ:
+        return "mlfq";
     default:
         return "unknown";
     }
@@ -177,7 +183,7 @@ int metrics_export_csv(const Process *procs, int n, const SimConfig *cfg,
 
     metrics_workload_summary(procs, n, &avg_burst, &std_burst, &avg_gap,
                              &max_priority);
-    if (algo == ALGO_RR) {
+    if (algo == ALGO_RR || algo == ALGO_MLFQ) {
         quantum = cfg->quantum;
     }
 

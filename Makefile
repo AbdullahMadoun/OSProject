@@ -48,6 +48,8 @@ TEST_BINS := \
 .PHONY: fuzz-input fuzz-queue fuzz-cmin fuzz-tmin
 .PHONY: fuzz-baseline-input fuzz-baseline-queue
 
+all: $(BIN)
+
 help:
 	@echo "Targets:"
 	@echo "  all                  Build the cpu_scheduler binary"
@@ -60,8 +62,6 @@ help:
 	@echo "  fuzz-queue           Fuzz the queue implementation"
 	@echo "  fuzz-baseline-input  Run 10-min input fuzzing campaign"
 	@echo "  fuzz-baseline-queue  Run 10-min queue fuzzing campaign"
-
-all: $(BIN)
 
 $(BIN): $(BIN_SRCS)
 	$(CC) $(CFLAGS) -o $@ $(BIN_SRCS) $(LDFLAGS)

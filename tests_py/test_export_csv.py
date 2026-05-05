@@ -60,3 +60,26 @@ def test_export_values_are_numeric(basic_workload, tmp_path):
         row = list(csv.DictReader(handle))[-1]
     assert float(row["avg_waiting"]) >= 0
     assert float(row["cpu_utilization"]) > 0
+
+
+def test_export_all_algorithms_have_labels(tmp_path):
+    out = str(tmp_path / "all.csv")
+    result = subprocess.run(
+        [BINARY, "-s", "basic", "-a", "all", "-e", out],
+        capture_output=True,
+        timeout=10,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr.decode()
+    with open(out, encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle))
+    assert [row["algo"] for row in rows] == [
+        "fcfs",
+        "sjf",
+        "rr",
+        "priority",
+        "srtf",
+        "priorityp",
+        "mlfq",
+    ]
+    assert all(row["algo"] != "unknown" for row in rows)

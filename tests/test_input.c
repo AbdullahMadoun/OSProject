@@ -87,6 +87,7 @@ static void suite_samples(void)
     mu_assert("priority",
               input_load_sample("priority", p, MAX_PROCESSES) > 0);
     mu_assert("edge", input_load_sample("edge", p, MAX_PROCESSES) > 0);
+    mu_assert("mixed", input_load_sample("mixed", p, MAX_PROCESSES) == 6);
     mu_assert("unknown",
               input_load_sample("unknown", p, MAX_PROCESSES) == CS_ERR);
 }
