@@ -3,9 +3,10 @@
 ## Overview
 
 Build a single-page interactive web dashboard for the CPU Scheduling Simulator.
-The dashboard must reimplement the four scheduling algorithms (FCFS, SJF,
-Round Robin, Priority) in JavaScript so it runs entirely in the browser with
-zero backend. All visualization is client-side.
+The dashboard must reimplement all seven scheduling algorithms (FCFS, SJF,
+Round Robin, Priority, SRTF, Preemptive Priority, MLFQ) in JavaScript so it
+runs entirely in the browser with zero backend. All visualization is
+client-side.
 
 The app lives in a new directory: `dashboard/` at the project root.
 Use **vanilla HTML + CSS + JavaScript only** — no frameworks, no build tools,
@@ -24,6 +25,9 @@ no npm. One `index.html`, one `style.css`, one or more `.js` files.
   - SJF = `#10b981` (green)
   - RR = `#f59e0b` (amber)
   - Priority = `#8b5cf6` (purple)
+  - SRTF = `#ef4444` (red)
+  - Preemptive Priority = `#ec4899` (pink)
+  - MLFQ = `#14b8a6` (teal)
 - **Border radius:** 12px for cards, 8px for inputs/buttons.
 - **Transitions:** all interactive elements get `transition: all 0.2s ease`.
 
@@ -51,9 +55,10 @@ no npm. One `index.html`, one `style.css`, one or more `.js` files.
 - A **"Remove"** button (trash icon) on each row.
 - A **Sample Workloads** dropdown with presets: Basic, Round Robin, Priority, Edge Case.
   Selecting one replaces the table contents with the matching `workloads/` data.
-- **Algorithm selector:** a segmented toggle bar with 5 options:
-  `FCFS | SJF | RR | Priority | All`
-- When **RR** is selected (or All), show a **Quantum** number input (default 2, min 1, max 20).
+- **Algorithm selector:** a segmented toggle bar with 8 options:
+  `FCFS | SJF | RR | Priority | SRTF | Priority-P | MLFQ | All`
+- When **RR**, **MLFQ**, or **All** is selected, show a **Quantum** number input (default 2, min 1, max 20).
+- When **MLFQ** or **All** is selected, show a **Queues** number input (default 3, min 2, max 5).
 - A large **"Run Simulation"** button with the accent gradient.
 - **Validation:** highlight invalid cells in red. Burst must be ≥1, arrival ≥0,
   priority ≥0, PIDs must be unique and ≥1.
@@ -66,7 +71,7 @@ no npm. One `index.html`, one `style.css`, one or more `.js` files.
 - Idle time (no process running) shown as a striped/hatched dark gray block.
 - A numbered **time axis** below the chart with tick marks at each time unit.
 - A **legend** mapping each PID to its color.
-- When "All" is selected, show **4 Gantt charts stacked vertically**, one per
+- When "All" is selected, show **7 Gantt charts stacked vertically**, one per
   algorithm, each labeled.
 
 ### Section 4 — Metrics Dashboard
@@ -90,7 +95,7 @@ no npm. One `index.html`, one `style.css`, one or more `.js` files.
 ### Section 5 — Algorithm Comparison
 
 - Only visible when "All" is selected.
-- A **grouped bar chart** (use Canvas or styled divs) comparing all 4 algorithms
+- A **grouped bar chart** (use Canvas or styled divs) comparing all 7 algorithms
   across each metric.
 - A **comparison table**: algorithms as columns, metrics as rows. The best
   (lowest for time metrics, highest for utilization/throughput) value in each
@@ -126,6 +131,26 @@ Reimplement these exactly as the C simulator does:
   arrival → lowest PID.
 - Run chosen process to completion.
 
+### SRTF (Shortest Remaining Time First — Preemptive)
+- At each event (new arrival or process completion), pick the process with the
+  shortest remaining burst time. Break ties: shortest remaining → earliest
+  arrival → lowest PID.
+- Preempts the running process if a newly arrived process has a shorter
+  remaining time.
+
+### Preemptive Priority
+- At each event, pick the arrived process with the lowest priority number.
+  Break ties: lowest priority number → earliest arrival → lowest PID.
+- Preempts the running process when a higher-priority process arrives.
+
+### MLFQ (Multi-Level Feedback Queue)
+- Uses multiple queues (default 3) numbered 0 (highest) to N-1 (lowest).
+- All processes enter queue 0. Each queue runs Round Robin with quantum
+  `2^level * base_quantum` (queue 0 uses `base_quantum`).
+- A process that exhausts its quantum without finishing is demoted to the next
+  lower queue.
+- Always run the highest-priority non-empty queue first.
+
 ---
 
 ## File Structure
@@ -136,7 +161,7 @@ dashboard/
 ├── style.css         # All styles
 ├── js/
 │   ├── main.js       # App initialization, event listeners, DOM orchestration
-│   ├── schedulers.js # All 4 scheduling algorithms (pure functions)
+│   ├── schedulers.js # All 7 scheduling algorithms (pure functions)
 │   ├── gantt.js      # Gantt chart rendering logic
 │   ├── metrics.js    # Metric computation
 │   └── charts.js     # Bar chart and comparison rendering
@@ -197,7 +222,7 @@ After the build, verify ALL of the following:
    CPU Utilization shows a circular progress ring.
 
 9. **Comparison mode:** Selecting "All" and running shows:
-   - 4 stacked Gantt charts.
+   - 7 stacked Gantt charts.
    - A grouped bar chart.
    - A comparison table with highlighted best values.
 

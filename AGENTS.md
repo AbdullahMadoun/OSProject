@@ -6,8 +6,9 @@ experimental prediction path has been removed.
 
 ## Current Status
 
-- The C simulator supports FCFS, non-preemptive SJF, Round Robin, and
-  non-preemptive priority scheduling.
+- The C simulator supports FCFS, non-preemptive SJF, Round Robin,
+  non-preemptive Priority, SRTF (Shortest Remaining Time First),
+  Preemptive Priority, and MLFQ scheduling.
 - The browser dashboard in `dashboard/` reimplements the same scheduling rules
   in client-side JavaScript.
 - `scripts/visualize_runs.py` converts scheduler CSV exports into standalone
@@ -73,7 +74,13 @@ make fuzz-baseline-queue
   breaks.
 - Round Robin uses a FIFO ready queue and requeues unfinished processes after
   adding arrivals that became ready during the current quantum.
-- `cfg->ctx_overhead` is applied by all four schedulers. An idle Gantt segment
+- SRTF is preemptive SJF: at each event (arrival or completion), the process
+  with the shortest remaining time runs. Ties broken by arrival, then PID.
+- Preemptive Priority preempts the running process when a higher-priority
+  process arrives. Ties broken by arrival, then PID.
+- MLFQ uses multiple queues with decreasing priority; a process that exhausts
+  its quantum is demoted to the next lower queue.
+- `cfg->ctx_overhead` is applied by all seven schedulers. An idle Gantt segment
   of length `ctx_overhead` is inserted whenever execution switches to a
   different PID.
 
@@ -81,7 +88,7 @@ make fuzz-baseline-queue
 
 - `include/`: shared C headers and data types.
 - `src/`: main simulator implementation.
-- `src/schedulers/`: FCFS, SJF, Round Robin, and priority algorithms.
+- `src/schedulers/`: FCFS, SJF, Round Robin, Priority, SRTF, Preemptive Priority, and MLFQ algorithms.
 - `tests/`: C unit tests.
 - `tests_py/`: Python tests for helper scripts and CSV export behavior.
 - `workloads/`: sample workload files (basic, rr, priority, edge, mixed).

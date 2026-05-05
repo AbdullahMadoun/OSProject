@@ -1,65 +1,42 @@
 # CPU Scheduling Simulator
 
-This repository contains a Phase 2 Operating Systems project: a working CPU
-scheduling simulator written in C, with tests, sample workloads, CSV export,
-browser visualization, fuzzing scaffolding, and a detailed progress report.
+A fully featured CPU scheduling simulator written in C11, with a browser-based
+interactive dashboard, gamified visualization features, a complete test suite,
+CSV export, and AFL++ fuzzing support.
 
-The project scope is now scheduler simulation only. The previous experimental
-prediction path has been fully removed from the source tree, build file,
-command-line interface, dependencies, and active documentation.
+## Implemented Algorithms
 
-## Phase 2 Status
+| Algorithm | Key | Preemptive | C | Dashboard |
+|-----------|-----|------------|---|-----------|
+| First Come First Served | `fcfs` | No | ✓ | ✓ |
+| Shortest Job First | `sjf` | No | ✓ | ✓ |
+| Round Robin | `rr` | Yes (quantum) | ✓ | ✓ |
+| Priority | `priority` | No | ✓ | ✓ |
+| Shortest Remaining Time First | `srtf` | Yes | ✓ | ✓ |
+| Preemptive Priority | `priorityp` | Yes | ✓ | ✓ |
+| Multilevel Feedback Queue | `mlfq` | Yes | ✓ | ✓ |
 
-The implementation is approximately 70% complete for the final project scope.
-The main scheduler modules are implemented and testable. Remaining work is
-validation depth, polish, final screenshots/PDF packaging, and stronger fuzzing
-and memory-safety evidence.
-
-Implemented:
-
-- FCFS, non-preemptive SJF, Round Robin, and non-preemptive priority scheduling
-- context-switch overhead (`-o`) supported by all four schedulers
-- workload parser for built-in samples and custom files
-- deterministic tie-breaking by arrival time and PID where applicable
-- Gantt timeline generation
-- per-process waiting, turnaround, and response metrics
-- aggregate utilization, throughput, context-switch, and total-time metrics
-- all-algorithm comparison mode
-- CSV export
-- browser dashboard in `dashboard/`
-- CSV-to-HTML dashboard generator in `scripts/visualize_runs.py`
-- process logger in `scripts/os_process_logger.py`
-- C unit tests for parser, process model, queues, schedulers, and metrics
-- AFL++ fuzzing harnesses and starter corpora
-
-Remaining:
-
-- document final PDF build output from `reports/phase2_report.tex`
-- add final screenshot assets or captured terminal images if required
-- run and archive Valgrind or sanitizer memory checks
-- run and archive longer AFL++ fuzz campaigns
-- add more edge-case tests near `MAX_PROCESSES` and CSV comparison export
+All algorithms support context-switch overhead (`-o`), deterministic
+tie-breaking by arrival time then PID, and idle-time accounting.
 
 ## Quick Start
 
 ```sh
-make clean
-make
+make clean && make
 make test-c
 ./cpu_scheduler -s basic -a all
 ./cpu_scheduler -f workloads/sample_rr.txt -a rr -q 4
-./cpu_scheduler -f workloads/sample_mixed.txt -a all
 ./cpu_scheduler -s basic -a all -e results.csv
-python3 scripts/visualize_runs.py results.csv -o results.html
 ```
 
-Open the browser dashboard directly:
+Serve the browser dashboard locally:
 
 ```sh
-open dashboard/index.html
+cd dashboard && python3 -m http.server 8080
+# then open http://localhost:8080
 ```
 
-On Linux, use `xdg-open dashboard/index.html`.
+Or open `dashboard/index.html` directly in a browser (`file://` works).
 
 ## Build Requirements
 
@@ -73,9 +50,6 @@ Optional:
 - Python 3 for helper scripts and Python tests
 - `pytest` and `psutil` from `requirements.txt`
 - AFL++ for fuzzing
-- a TeX distribution for compiling `reports/phase2_report.tex`
-
-Install optional Python dependencies:
 
 ```sh
 python3 -m pip install -r requirements.txt
@@ -95,10 +69,16 @@ Run Round Robin with a custom quantum:
 ./cpu_scheduler -f workloads/sample_rr.txt -a rr -q 4
 ```
 
-Run priority scheduling:
+Run SRTF with context-switch overhead:
 
 ```sh
-./cpu_scheduler -f workloads/sample_priority.txt -a priority
+./cpu_scheduler -s basic -a srtf -o 1
+```
+
+Run MLFQ (quantum controls Q0 slice; Q1 = 2×Q0; Q2 = FCFS):
+
+```sh
+./cpu_scheduler -s mixed -a mlfq -q 2
 ```
 
 Export a comparison CSV:
@@ -112,9 +92,9 @@ Command-line options:
 ```text
 -f <file>     Load workload from file
 -s <name>     Use sample workload: basic | rr | priority | edge
--a <algo>     Algorithm: fcfs | sjf | rr | priority | all
--q <int>      Round Robin quantum, default 2
--o <int>      Context switch overhead, default 0
+-a <algo>     Algorithm: fcfs | sjf | rr | priority | srtf | priorityp | mlfq | all
+-q <int>      Time quantum for RR / MLFQ Q0 (default: 2)
+-o <int>      Context switch overhead in ms (default: 0)
 -e <file>     Export metrics to CSV
 -h            Show help
 ```
@@ -150,30 +130,44 @@ Sample workloads are in `workloads/`.
 
 ## Scheduling Rules
 
-FCFS:
-
+**FCFS** — First Come First Served:
 - sorts by arrival time, then PID
 - runs each process to completion
 - inserts idle time if no process has arrived
 
-SJF:
+**SJF** — Shortest Job First (non-preemptive):
+- picks the ready process with the shortest burst time
+- tie-breaks by burst, then arrival time, then PID
+- runs the chosen process to completion before reconsidering
 
-- non-preemptive
-- chooses the arrived process with the shortest burst
-- tie-breaks by burst, arrival time, and PID
-
-Round Robin:
-
+**Round Robin**:
 - uses a FIFO ready queue
 - runs a process for at most `quantum` ticks
-- enqueues newly arrived processes before requeueing an unfinished process
-- counts a context switch when execution moves between different PIDs
+- newly arrived processes are enqueued before requeueing an unfinished process
+- counts a context switch whenever execution moves to a different PID
 
-Priority:
+**Priority** (non-preemptive):
+- picks the ready process with the lowest priority number (highest urgency)
+- tie-breaks by priority, then arrival time, then PID
+- runs the chosen process to completion
 
-- non-preemptive
-- lower priority number runs first
-- tie-breaks by priority, arrival time, and PID
+**SRTF** — Shortest Remaining Time First (preemptive SJF):
+- at each event, picks the ready process with the least remaining time
+- preempts the running process whenever a shorter-remaining one arrives
+- tie-breaks by remaining time, then arrival time, then PID
+
+**Preemptive Priority** (`priorityp`):
+- at each event, picks the ready process with the lowest priority number
+- preempts the running process whenever a higher-priority one arrives
+- tie-breaks by priority, then arrival time, then PID
+
+**MLFQ** — Multilevel Feedback Queue (3 queues):
+- Q0: quantum = `-q` value (default 2); highest priority
+- Q1: quantum = 2 × Q0; medium priority
+- Q2: FCFS, no quantum limit; lowest priority
+- new arrivals always enter Q0
+- exhausting a quantum demotes a process to the next queue
+- a new Q0 arrival preempts any process running in Q1 or Q2
 
 ## Metrics
 
@@ -193,125 +187,112 @@ Aggregate metrics:
 - CPU utilization
 - throughput
 - context switches
-- total runtime
-- idle time
+- total runtime / idle time
 
 ## Tests
 
-Run the C suite:
+11 C test suites, all passing:
 
 ```sh
 make test-c
 ```
 
-Run all available tests:
+Suites: `test_process`, `test_queue`, `test_input`, `test_fcfs`, `test_sjf`,
+`test_rr`, `test_priority`, `test_srtf`, `test_priority_p`, `test_mlfq`,
+`test_metrics`.
 
-```sh
-make test
-```
-
-Python helper tests only:
+Run Python helper tests:
 
 ```sh
 python3 -m pytest -q tests_py
 ```
 
+Run everything:
+
+```sh
+make test
+```
+
 ## Browser Dashboard
 
-The browser dashboard in `dashboard/` is a no-build static app. It provides:
+The dashboard in `dashboard/` is a no-build static app. Open `index.html`
+directly or serve it with any HTTP server.
 
-- editable process table
-- sample workload selector
-- scheduler selector
-- Round Robin quantum control
-- input validation
-- Gantt chart rendering
-- metric cards
-- per-process metrics table
-- all-algorithm comparison view
+**Algorithms:** all 7 — FCFS, SJF, RR, Priority, SRTF, P-Priority, MLFQ —
+selectable via a segmented button bar. MLFQ exposes configurable Q0/Q1
+quantums.
 
-The dashboard reimplements the scheduler rules in JavaScript so it can run from
-`file://`.
+**Core views:**
+- editable process table with live input validation
+- sample workload selector and random workload generator
+- Gantt chart with step-by-step playback controls
+- per-process and aggregate metrics cards
+- all-algorithm comparison chart and table
+
+**Interactive features:**
+- **Why Inspector** — click any Gantt block to see exactly why the scheduler
+  chose that process at that moment, with the ready queue sorted by decision
+  criterion
+- **Race Mode** — runs all algorithms simultaneously and ranks them by average
+  waiting time with a live animated bar race
+- **Be the Scheduler** — manually dispatch processes step by step and receive
+  a score comparing your decisions against FCFS, SJF, RR, and Priority
+- **Adversarial Generator** — generates workloads that expose each algorithm's
+  worst-case weakness (convoy, starvation, thrashing, priority inversion)
+- **Guess the Algorithm Quiz** — shows an anonymous Gantt chart and asks you
+  to identify the scheduling algorithm from four choices; tracks score, accuracy
+  percentage, and streak
+- **Kiosk / Presentation Mode** — hides all input controls and auto-cycles
+  through workloads with animated playback; designed for EXPO display
 
 ## CSV Dashboard
 
-Generate scheduler metrics:
+Generate and visualize a comparison CSV:
 
 ```sh
 ./cpu_scheduler -s basic -a all -e results.csv
-```
-
-Generate a self-contained HTML dashboard:
-
-```sh
 python3 scripts/visualize_runs.py results.csv -o results.html
 ```
 
-Open `results.html` in a browser.
+## Fuzzing
 
-## OS Process Logger
-
-The optional process logger samples local macOS or Windows process CPU activity
-and converts active processes into a scheduler workload:
-
-```sh
-python3 scripts/os_process_logger.py --duration 60 --interval 1 --run-simulator
-```
-
-Useful options:
-
-```sh
-python3 scripts/os_process_logger.py --duration 120 --anonymous
-python3 scripts/os_process_logger.py --duration 60 --run-simulator --quantum 4
-python3 scripts/os_process_logger.py --duration 60 --binary ./cpu_scheduler.exe
-```
-
-This is an approximation for experimentation. It does not inspect, replace, or
-claim to reproduce the real operating-system scheduler.
-
-## Fuzzing Support
-
-Fuzzing requires AFL++.
+Requires AFL++:
 
 ```sh
 make fuzz-build
 make fuzz-input
 make fuzz-queue
-make fuzz-baseline-input
-make fuzz-baseline-queue
+make fuzz-baseline-input   # 10-minute input campaign
+make fuzz-baseline-queue   # 10-minute queue campaign
 ```
 
-Current fuzzing status:
-
-- parser and queue harnesses exist
-- seed corpora and a workload dictionary exist
-- long campaign reports and triaged crash artifacts are not committed yet
+Harnesses cover the workload parser (`fuzz/fuzz_input.c`) and the queue
+implementation (`fuzz/fuzz_queue.c`). Seed corpora and a workload dictionary
+are included in `fuzz/`.
 
 ## Project Layout
 
 ```text
-include/              Public C headers
-src/                  C simulator implementation
-src/schedulers/       FCFS, SJF, RR, and priority schedulers
-tests/                C unit tests
-tests_py/             Python tests for helper scripts and CSV export
-workloads/            Sample workload files
-dashboard/            Browser dashboard
-scripts/              Helper scripts and CSV dashboard generator
-fuzz/                 AFL++ fuzz harnesses, dictionaries, and corpora
-reports/              Phase report source
-results.csv           Example CSV export
-results.html          Example generated HTML dashboard
+include/                   Public C headers
+src/                       C simulator implementation
+src/schedulers/            All 7 scheduler implementations
+tests/                     C unit tests (11 suites)
+tests_py/                  Python tests for helper scripts
+workloads/                 Sample workload files
+dashboard/                 Browser dashboard (no build step)
+scripts/                   Helper scripts and CSV-to-HTML generator
+fuzz/                      AFL++ harnesses, dictionaries, and corpora
+reports/                   Phase report sources
 ```
 
 ## Suggested Grading Flow
 
 1. Read the workload format and scheduling rules above.
-2. Run `make clean && make`.
-3. Run `make test-c`.
-4. Run `./cpu_scheduler -s basic -a all`.
-5. Run `./cpu_scheduler -f workloads/sample_rr.txt -a rr -q 4`.
-6. Run `./cpu_scheduler -s basic -a all -e results.csv`.
-7. Run `python3 scripts/visualize_runs.py results.csv -o results.html`.
-8. Open `dashboard/index.html` to inspect the interactive visualization.
-9. Compile `reports/phase2_report.tex` to PDF for the Phase 2 report.
+2. `make clean && make`
+3. `make test-c` — all 11 suites should pass.
+4. `./cpu_scheduler -s basic -a all`
+5. `./cpu_scheduler -f workloads/sample_rr.txt -a rr -q 4`
+6. `./cpu_scheduler -s basic -a srtf -o 1`
+7. `./cpu_scheduler -s mixed -a mlfq -q 2`
+8. `./cpu_scheduler -s basic -a all -e results.csv`
+9. Open `dashboard/index.html` — try the Gantt playback, Why Inspector, and Quiz.

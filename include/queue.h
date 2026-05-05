@@ -62,6 +62,9 @@ int heap_snapshot(const MinHeap *h, int *out, int max);
 /** Comparator for burst time with required tie-break behavior. */
 int cmp_burst_time(const Process *a, const Process *b);
 
+/** Comparator for remaining_time — used by SRTF. */
+int cmp_remaining_time(const Process *a, const Process *b);
+
 /** Comparator for priority with required tie-break behavior. */
 int cmp_priority(const Process *a, const Process *b);
 
