@@ -7,7 +7,8 @@
     rr: "Round Robin",
     priority: "Priority",
     mlfq: "Multilevel Feedback Queue",
-    srtf: "Shortest Remaining Time First"
+    srtf: "Shortest Remaining Time First",
+    priorityp: "Preemptive Priority"
   };
 
   const ALGO_COLORS = {
@@ -16,7 +17,8 @@
     rr: "#f59e0b",
     priority: "#8b5cf6",
     mlfq: "#e11d48",
-    srtf: "#06b6d4"
+    srtf: "#06b6d4",
+    priorityp: "#f43f5e"
   };
 
   const MLFQ_QUEUE_COLORS = ["#f97316", "#a855f7", "#64748b"];
@@ -101,6 +103,12 @@
         return `P${seg.pid} holds the highest priority (value = ${chosen.priority}, lower = more urgent).${rivals.length > 0 ? ` Ties broken by earliest arrival.` : ""}`;
       }
 
+      case "priorityp": {
+        const rem = getRemainingAt(result, seg.pid, seg.start);
+        const rivals = ready.filter((p) => p.pid !== seg.pid && p.priority <= chosen.priority);
+        return `P${seg.pid} holds the highest priority (value = ${chosen.priority}, lower = more urgent) at t=${seg.start} with ${rem} ms remaining. Unlike non-preemptive priority, this scheduler interrupts any running process the moment a higher-priority one arrives.${rivals.length > 0 ? " Ties broken by earliest arrival." : ""}`;
+      }
+
       case "srtf": {
         const rem = getRemainingAt(result, seg.pid, seg.start);
         const rivals = ready.filter((p) => p.pid !== seg.pid);
@@ -135,6 +143,7 @@
         case "rr":
           return a.arrival - b.arrival || a.pid - b.pid;
         case "priority":
+        case "priorityp":
           return a.priority - b.priority || a.arrival - b.arrival || a.pid - b.pid;
         case "srtf": {
           const ra = getRemainingAt(result, a.pid, t);

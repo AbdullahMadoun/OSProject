@@ -10,7 +10,8 @@
     rr: { key: "rr", label: "RR", longLabel: "Round Robin" },
     priority: { key: "priority", label: "Priority", longLabel: "Priority" },
     mlfq: { key: "mlfq", label: "MLFQ", longLabel: "Multilevel Feedback Queue" },
-    srtf: { key: "srtf", label: "SRTF", longLabel: "Shortest Remaining Time First" }
+    srtf: { key: "srtf", label: "SRTF", longLabel: "Shortest Remaining Time First" },
+    priorityp: { key: "priorityp", label: "P-Priority", longLabel: "Preemptive Priority" }
   };
 
   function cloneProcesses(processes) {
@@ -363,6 +364,77 @@
     return finalizeResult("srtf", processes, timeline, contextSwitches);
   }
 
+  function schedulePreemptivePriority(inputProcesses, options) {
+    const config = options || {};
+    const ctxOverhead = Math.max(0, Number(config.ctxOverhead) || 0);
+    const processes = cloneProcesses(inputProcesses);
+    const order = processes.slice().sort(byArrivalThenPid);
+    const ready = [];
+    const timeline = [];
+    let currentTime = 0;
+    let nextIndex = 0;
+    let completed = 0;
+    let contextSwitches = 0;
+    let lastDispatchedPid = null;
+
+    function enqueueArrivals() {
+      while (nextIndex < order.length && order[nextIndex].arrival <= currentTime) {
+        ready.push(order[nextIndex]);
+        nextIndex += 1;
+      }
+    }
+
+    function pickHighestPriority() {
+      if (!ready.length) return null;
+      return ready.reduce((best, p) => {
+        if (p.priority < best.priority) return p;
+        if (p.priority === best.priority && p.arrival < best.arrival) return p;
+        if (p.priority === best.priority && p.arrival === best.arrival && p.pid < best.pid) return p;
+        return best;
+      }, ready[0]);
+    }
+
+    while (completed < processes.length) {
+      enqueueArrivals();
+      const proc = pickHighestPriority();
+
+      if (!proc) {
+        const nextArrival = order[nextIndex].arrival;
+        pushSegment(timeline, -1, currentTime, nextArrival, true, "idle");
+        currentTime = nextArrival;
+        continue;
+      }
+
+      if (lastDispatchedPid !== null && lastDispatchedPid !== proc.pid) {
+        contextSwitches += 1;
+        currentTime = applyContextOverhead(timeline, currentTime, ctxOverhead);
+        enqueueArrivals();
+      }
+
+      ready.splice(ready.indexOf(proc), 1);
+      if (proc.start === null) proc.start = currentTime;
+
+      const nextArrival = nextIndex < order.length ? order[nextIndex].arrival : Infinity;
+      const runUntil = Math.min(currentTime + proc.remaining, nextArrival);
+      proc.remaining -= (runUntil - currentTime);
+      pushSegment(timeline, proc.pid, currentTime, runUntil, true);
+      currentTime = runUntil;
+
+      enqueueArrivals();
+
+      if (proc.remaining <= 0) {
+        proc.completion = currentTime;
+        completed += 1;
+      } else {
+        ready.push(proc);
+      }
+
+      lastDispatchedPid = proc.pid;
+    }
+
+    return finalizeResult("priorityp", processes, timeline, contextSwitches);
+  }
+
   function scheduleMlfq(inputProcesses, options) {
     const config = options || {};
     const ctxOverhead = Math.max(0, Number(config.ctxOverhead) || 0);
@@ -468,6 +540,7 @@
     if (algorithm === "priority") return schedulePriority(processes, config);
     if (algorithm === "mlfq") return scheduleMlfq(processes, config);
     if (algorithm === "srtf") return scheduleSrtf(processes, config);
+    if (algorithm === "priorityp") return schedulePreemptivePriority(processes, config);
     throw new Error(`Unsupported algorithm: ${algorithm}`);
   }
 

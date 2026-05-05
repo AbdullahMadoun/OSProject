@@ -9,7 +9,10 @@ typedef enum {
     ALGO_SJF = 1,
     ALGO_RR = 2,
     ALGO_PRIORITY = 3,
-    ALGO_COUNT = 4
+    ALGO_SRTF = 4,
+    ALGO_PRIORITY_P = 5,
+    ALGO_MLFQ = 6,
+    ALGO_COUNT = 7
 } SchedAlgo;
 
 /** Reset processes, dispatch the selected algorithm, and finalize the result. */
@@ -28,6 +31,16 @@ void sched_rr(Process *procs, int n, const SimConfig *cfg, SimResult *r);
 /** Run the non-preemptive priority scheduler. */
 void sched_priority(Process *procs, int n, const SimConfig *cfg,
                     SimResult *r);
+
+/** Run the preemptive SJF (Shortest Remaining Time First) scheduler. */
+void sched_srtf(Process *procs, int n, const SimConfig *cfg, SimResult *r);
+
+/** Run the preemptive priority scheduler. */
+void sched_priority_p(Process *procs, int n, const SimConfig *cfg,
+                      SimResult *r);
+
+/** Run the Multilevel Feedback Queue scheduler (3 queues). */
+void sched_mlfq(Process *procs, int n, const SimConfig *cfg, SimResult *r);
 
 /** Return the algorithm display name. */
 const char *algo_name(SchedAlgo a);

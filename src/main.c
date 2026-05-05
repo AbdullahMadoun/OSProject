@@ -13,7 +13,7 @@ static void print_usage(const char *prog)
     printf("Options:\n");
     printf("  -f <file>     Load workload from file\n");
     printf("  -s <name>     Use sample workload: basic | rr | priority | edge\n");
-    printf("  -a <algo>     Algorithm: fcfs | sjf | rr | priority | all\n");
+    printf("  -a <algo>     Algorithm: fcfs | sjf | srtf | rr | priority | priorityp | mlfq | all\n");
     printf("  -q <int>      Round Robin quantum (default: 2)\n");
     printf("  -o <int>      Context switch overhead (default: 0)\n");
     printf("  -e <file>     Export metrics to CSV\n");
@@ -50,6 +50,12 @@ const char *algo_name(SchedAlgo a)
         return "rr";
     case ALGO_PRIORITY:
         return "priority";
+    case ALGO_SRTF:
+        return "srtf";
+    case ALGO_PRIORITY_P:
+        return "priorityp";
+    case ALGO_MLFQ:
+        return "mlfq";
     default:
         return "unknown";
     }
@@ -71,6 +77,15 @@ SchedAlgo algo_from_str(const char *s)
     }
     if (strcmp(s, "priority") == 0) {
         return ALGO_PRIORITY;
+    }
+    if (strcmp(s, "srtf") == 0) {
+        return ALGO_SRTF;
+    }
+    if (strcmp(s, "priorityp") == 0) {
+        return ALGO_PRIORITY_P;
+    }
+    if (strcmp(s, "mlfq") == 0) {
+        return ALGO_MLFQ;
     }
     return ALGO_COUNT;
 }
@@ -101,6 +116,15 @@ void schedule(SchedAlgo algo, Process *procs, int n, const SimConfig *cfg,
         break;
     case ALGO_PRIORITY:
         sched_priority(procs, n, cfg, result);
+        break;
+    case ALGO_SRTF:
+        sched_srtf(procs, n, cfg, result);
+        break;
+    case ALGO_PRIORITY_P:
+        sched_priority_p(procs, n, cfg, result);
+        break;
+    case ALGO_MLFQ:
+        sched_mlfq(procs, n, cfg, result);
         break;
     default:
         return;
@@ -137,7 +161,8 @@ int main(int argc, char **argv)
     Process procs[MAX_PROCESSES];
     Metrics compare_metrics[ALGO_COUNT];
     SchedAlgo compare_algos[ALGO_COUNT] = {
-        ALGO_FCFS, ALGO_SJF, ALGO_RR, ALGO_PRIORITY
+        ALGO_FCFS, ALGO_SJF, ALGO_RR, ALGO_PRIORITY, ALGO_SRTF,
+        ALGO_PRIORITY_P, ALGO_MLFQ
     };
     SimConfig cfg = {DEFAULT_QUANTUM, DEFAULT_CTX_OVERHEAD};
     const char *workload_file = NULL;

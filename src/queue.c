@@ -225,7 +225,20 @@ int cmp_burst_time(const Process *a, const Process *b)
     return a->burst_time - b->burst_time;
 }
 
+int cmp_remaining_time(const Process *a, const Process *b)
+{
+    if (a->remaining_time != b->remaining_time) {
+        return a->remaining_time - b->remaining_time;
+    }
+    if (a->arrival_time != b->arrival_time) {
+        return a->arrival_time - b->arrival_time;
+    }
+    return a->pid - b->pid;
+}
+
 int cmp_priority(const Process *a, const Process *b)
 {
-    return a->priority - b->priority;
+    if (a->priority != b->priority) return a->priority - b->priority;
+    if (a->arrival_time != b->arrival_time) return a->arrival_time - b->arrival_time;
+    return a->pid - b->pid;
 }

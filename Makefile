@@ -23,7 +23,10 @@ CORE_SRCS := \
 	src/schedulers/fcfs.c \
 	src/schedulers/sjf.c \
 	src/schedulers/rr.c \
-	src/schedulers/priority.c
+	src/schedulers/priority.c \
+	src/schedulers/srtf.c \
+	src/schedulers/priority_p.c \
+	src/schedulers/mlfq.c
 
 BIN_SRCS := src/main.c $(CORE_SRCS)
 
@@ -35,6 +38,9 @@ TEST_BINS := \
 	$(TEST_BIN_DIR)/test_sjf \
 	$(TEST_BIN_DIR)/test_rr \
 	$(TEST_BIN_DIR)/test_priority \
+	$(TEST_BIN_DIR)/test_srtf \
+	$(TEST_BIN_DIR)/test_priority_p \
+	$(TEST_BIN_DIR)/test_mlfq \
 	$(TEST_BIN_DIR)/test_metrics
 
 .PHONY: all clean test test-c py-tests help
@@ -101,6 +107,23 @@ $(TEST_BIN_DIR)/test_priority: tests/test_priority.c src/process.c \
 		src/sim_engine.c src/metrics.c src/schedulers/priority.c \
 		$(LDFLAGS)
 
+$(TEST_BIN_DIR)/test_srtf: tests/test_srtf.c src/process.c src/queue.c \
+	src/sim_engine.c src/metrics.c src/schedulers/srtf.c | $(TEST_BIN_DIR)
+	$(CC) $(CFLAGS) -o $@ tests/test_srtf.c src/process.c src/queue.c \
+		src/sim_engine.c src/metrics.c src/schedulers/srtf.c $(LDFLAGS)
+
+$(TEST_BIN_DIR)/test_priority_p: tests/test_priority_p.c src/process.c \
+	src/queue.c src/sim_engine.c src/metrics.c \
+	src/schedulers/priority_p.c | $(TEST_BIN_DIR)
+	$(CC) $(CFLAGS) -o $@ tests/test_priority_p.c src/process.c src/queue.c \
+		src/sim_engine.c src/metrics.c src/schedulers/priority_p.c \
+		$(LDFLAGS)
+
+$(TEST_BIN_DIR)/test_mlfq: tests/test_mlfq.c src/process.c src/queue.c \
+	src/sim_engine.c src/metrics.c src/schedulers/mlfq.c | $(TEST_BIN_DIR)
+	$(CC) $(CFLAGS) -o $@ tests/test_mlfq.c src/process.c src/queue.c \
+		src/sim_engine.c src/metrics.c src/schedulers/mlfq.c $(LDFLAGS)
+
 $(TEST_BIN_DIR)/test_metrics: tests/test_metrics.c src/process.c \
 	src/sim_engine.c src/metrics.c | $(TEST_BIN_DIR)
 	$(CC) $(CFLAGS) -o $@ tests/test_metrics.c src/process.c \
@@ -114,6 +137,9 @@ test-c: $(TEST_BINS)
 	./$(TEST_BIN_DIR)/test_sjf
 	./$(TEST_BIN_DIR)/test_rr
 	./$(TEST_BIN_DIR)/test_priority
+	./$(TEST_BIN_DIR)/test_srtf
+	./$(TEST_BIN_DIR)/test_priority_p
+	./$(TEST_BIN_DIR)/test_mlfq
 	./$(TEST_BIN_DIR)/test_metrics
 
 test: all test-c py-tests
