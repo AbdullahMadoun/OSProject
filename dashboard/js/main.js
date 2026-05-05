@@ -53,6 +53,7 @@
       "sampleSelect",
       "addProcessButton",
       "clearProcessButton",
+      "randomProcessButton",
       "runSimulationButton",
       "runAllButton",
       "mlfqPanel",
@@ -227,6 +228,30 @@
 
   function clearProcesses() {
     renderProcessRows([]);
+  }
+
+  function randomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  function generateRandomWorkload() {
+    const count = randomInt(3, 7);
+    const usedPids = new Set();
+    const processes = [];
+    let pid = 1;
+    for (let i = 0; i < count; i++) {
+      while (usedPids.has(pid)) pid++;
+      usedPids.add(pid);
+      processes.push({
+        pid,
+        arrival:  randomInt(0, 10),
+        burst:    randomInt(1, 12),
+        priority: randomInt(1, 6)
+      });
+      pid++;
+    }
+    renderProcessRows(processes);
+    validateProcessTable();
   }
 
   function setPreset(key) {
@@ -496,6 +521,7 @@
 
     els.addProcessButton.addEventListener("click", addProcess);
     els.clearProcessButton.addEventListener("click", clearProcesses);
+    if (els.randomProcessButton) els.randomProcessButton.addEventListener("click", generateRandomWorkload);
     els.sampleSelect.addEventListener("change", (event) => setPreset(event.target.value));
     els.runSimulationButton.addEventListener("click", runSimulation);
     if (els.runAllButton) {
