@@ -1,8 +1,9 @@
 # Agent Repo Guide
 
-This repository is a CPU scheduling simulator for an Operating Systems Phase 2
-submission. The active scope is pure scheduler simulation. The earlier
-experimental prediction path has been removed.
+This repository is a CPU scheduling simulator for an Operating Systems Phase 3
+final submission. The active scope is pure scheduler simulation plus the
+browser dashboard and final report evidence. The earlier experimental
+prediction path has been removed.
 
 ## Current Status
 
@@ -15,11 +16,13 @@ experimental prediction path has been removed.
   HTML reports.
 - `scripts/os_process_logger.py` samples local process CPU activity and turns
   it into simulator workloads for experimentation.
-- The Phase 2 report source is `reports/phase2_report.tex`.
+- The Phase 3 final report source is `reports/phase3_final_report.tex`; the
+  generated PDF is `reports/phase3_final_report.pdf`.
 - C tests cover the main parser, queue, scheduler, and metrics behavior.
 - Fuzzing harnesses and seed corpora exist, but long campaign evidence is not
   committed.
-- Valgrind or equivalent memory-leak proof is not documented yet.
+- Sanitizer validation is documented in the Phase 3 report; long Valgrind logs
+  are not committed.
 
 ## Common Commands
 
@@ -33,7 +36,7 @@ python3 -m pytest -q tests_py
 ./cpu_scheduler -s basic -a all -e results.csv
 python3 scripts/visualize_runs.py results.csv -o results.html
 python3 scripts/os_process_logger.py --duration 60 --interval 1 --run-simulator
-latexmk -pdf reports/phase2_report.tex
+latexmk -pdf -jobname=phase3_final_report -outdir=reports reports/phase3_final_report.tex
 ```
 
 Fuzzing requires AFL++:
@@ -96,7 +99,8 @@ make fuzz-baseline-queue
 - `scripts/visualize_runs.py`: CSV-to-HTML dashboard generator.
 - `scripts/os_process_logger.py`: local process sampler and workload generator.
 - `fuzz/`: AFL++ fuzz targets, dictionaries, and corpora.
-- `reports/phase2_report.tex`: Phase 2 progress report source.
+- `reports/phase3_final_report.tex`: Phase 3 final report source.
+- `reports/phase3_final_report.pdf`: compiled final report PDF.
 - `DASHBOARD_SPEC.md`: dashboard build specification.
 - `README.md`: human-facing project instructions.
 

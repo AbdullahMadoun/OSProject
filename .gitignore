@@ -10,6 +10,7 @@ __pycache__/
 *.obj
 *.out
 *.exe
+*.dSYM/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
@@ -18,6 +19,7 @@ reports/os_process_logs/
 *.aux
 *.fdb_latexmk
 *.fls
+*.toc
 *.log
 *.out
 *.synctex.gz

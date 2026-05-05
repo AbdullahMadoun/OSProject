@@ -38,6 +38,12 @@ cd dashboard && python3 -m http.server 8080
 
 Or open `dashboard/index.html` directly in a browser (`file://` works).
 
+## Final Phase 3 Report
+
+The final submission report is available as `reports/phase3_final_report.pdf`.
+Its LaTeX source is `reports/phase3_final_report.tex`, and the browser
+evidence screenshots used in the report are stored under `reports/assets/`.
+
 ## Build Requirements
 
 Required:
@@ -282,7 +288,7 @@ workloads/                 Sample workload files
 dashboard/                 Browser dashboard (no build step)
 scripts/                   Helper scripts and CSV-to-HTML generator
 fuzz/                      AFL++ harnesses, dictionaries, and corpora
-reports/                   Phase report sources
+reports/                   Phase reports, final PDF, and evidence assets
 ```
 
 ## Suggested Grading Flow

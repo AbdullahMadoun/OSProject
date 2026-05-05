@@ -3,16 +3,15 @@
 
   const PRESETS = {
     basic: [
-      { pid: 1, arrival: 0, burst: 6, priority: 2 },
-      { pid: 2, arrival: 2, burst: 4, priority: 1 },
-      { pid: 3, arrival: 4, burst: 8, priority: 3 },
-      { pid: 4, arrival: 6, burst: 3, priority: 4 }
+      { pid: 1, arrival: 0, burst: 8, priority: 3 },
+      { pid: 2, arrival: 1, burst: 4, priority: 1 },
+      { pid: 3, arrival: 2, burst: 9, priority: 4 },
+      { pid: 4, arrival: 3, burst: 5, priority: 2 }
     ],
     rr: [
-      { pid: 1, arrival: 0, burst: 5, priority: 0 },
-      { pid: 2, arrival: 1, burst: 3, priority: 0 },
-      { pid: 3, arrival: 2, burst: 8, priority: 0 },
-      { pid: 4, arrival: 3, burst: 6, priority: 0 }
+      { pid: 1, arrival: 0, burst: 24, priority: 0 },
+      { pid: 2, arrival: 0, burst: 3, priority: 0 },
+      { pid: 3, arrival: 0, burst: 3, priority: 0 }
     ],
     priority: [
       { pid: 1, arrival: 0, burst: 10, priority: 3 },
@@ -22,7 +21,7 @@
       { pid: 5, arrival: 0, burst: 5, priority: 2 }
     ],
     edge: [
-      { pid: 1, arrival: 5, burst: 3, priority: 1 }
+      { pid: 1, arrival: 5, burst: 3, priority: 0 }
     ],
     mixed: [
       { pid: 1, arrival: 0, burst: 6, priority: 3 },
@@ -257,6 +256,10 @@
   function setPreset(key) {
     renderProcessRows(clonePreset(key));
     els.sampleSelect.value = key;
+    if (key === "rr") {
+      els.quantumInput.value = 4;
+      getQuantum();
+    }
   }
 
   function stopPlayback() {

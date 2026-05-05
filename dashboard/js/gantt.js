@@ -60,7 +60,7 @@
       idleTime: stats.idleTime,
       overheadTime: stats.overheadTime,
       busyTime: Math.max(0, stats.totalTime - stats.idleTime - stats.overheadTime),
-      contextSwitches: stats.contextSwitches
+      contextSwitches: result.contextSwitches || 0
     };
   }
 

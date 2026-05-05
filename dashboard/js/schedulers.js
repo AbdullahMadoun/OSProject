@@ -107,7 +107,6 @@
       }
 
       if (lastDispatchedPid !== null && lastDispatchedPid !== proc.pid) {
-        contextSwitches += 1;
         currentTime = applyContextOverhead(timeline, currentTime, ctxOverhead);
       }
 
@@ -158,7 +157,6 @@
 
       const proc = ready.shift();
       if (lastDispatchedPid !== null && lastDispatchedPid !== proc.pid) {
-        contextSwitches += 1;
         currentTime = applyContextOverhead(timeline, currentTime, ctxOverhead);
       }
       proc.start = currentTime;
@@ -209,7 +207,6 @@
 
       const proc = ready.shift();
       if (lastDispatchedPid !== null && lastDispatchedPid !== proc.pid) {
-        contextSwitches += 1;
         currentTime = applyContextOverhead(timeline, currentTime, ctxOverhead);
       }
       proc.start = currentTime;

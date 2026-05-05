@@ -28,12 +28,15 @@ NUMERIC_FIELDS = {
     "throughput": float,
 }
 
-ALGO_ORDER = ["fcfs", "sjf", "rr", "priority"]
+ALGO_ORDER = ["fcfs", "sjf", "rr", "priority", "srtf", "priorityp", "mlfq"]
 ALGO_COLORS = {
     "fcfs": "#0b6e4f",
     "sjf": "#d97706",
     "rr": "#2563eb",
     "priority": "#b91c1c",
+    "srtf": "#7c3aed",
+    "priorityp": "#0891b2",
+    "mlfq": "#475569",
 }
 METRIC_LABELS = {
     "avg_waiting": "Average Waiting Time",
@@ -215,7 +218,7 @@ def build_html_report(rows: list[dict[str, object]], source_name: str) -> str:
         ]
     )
 
-    return f"""<!DOCTYPE html>
+    document = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -432,6 +435,7 @@ def build_html_report(rows: list[dict[str, object]], source_name: str) -> str:
 </body>
 </html>
 """
+    return "\n".join(line.rstrip() for line in document.splitlines()) + "\n"
 
 
 def main() -> int:

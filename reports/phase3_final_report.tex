@@ -8,12 +8,15 @@
 \usepackage{booktabs}
 \usepackage{array}
 \usepackage{longtable}
+\usepackage{tabularx}
 \usepackage{graphicx}
 \usepackage{listings}
 \usepackage{tikz}
 \usepackage{float}
-\usetikzlibrary{arrows.meta,positioning}
-\usepackage[hidelinks]{hyperref}
+\usepackage{enumitem}
+\usepackage{tcolorbox}
+\usetikzlibrary{arrows.meta,positioning,calc,fit,backgrounds}
+\usepackage{hyperref}
 
 \graphicspath{{reports/assets/}{assets/}}
 
@@ -23,6 +26,16 @@
 \definecolor{success}{HTML}{1B7F4A}
 \definecolor{accent}{HTML}{EAF4FF}
 \definecolor{warning}{HTML}{A15C00}
+\definecolor{ink}{HTML}{18212B}
+\definecolor{panel}{HTML}{F7FAFC}
+\definecolor{phaseblue}{HTML}{E6F3FF}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=heading,
+  citecolor=heading,
+  urlcolor=heading
+}
 
 \lstdefinestyle{terminal}{
   basicstyle=\ttfamily\small,
@@ -48,30 +61,79 @@
 
 \newcommand{\statusdone}{\textcolor{success}{Complete}}
 \newcommand{\statusnote}{\textcolor{warning}{Documented}}
+\newcommand{\artifact}[1]{\texttt{#1}}
+
+\newtcolorbox{summarybox}{
+  colback=phaseblue,
+  colframe=heading,
+  boxrule=0.8pt,
+  arc=2pt,
+  left=8pt,
+  right=8pt,
+  top=7pt,
+  bottom=7pt
+}
+
+\newtcolorbox{evidencebox}[1]{
+  colback=panel,
+  colframe=codeborder,
+  title=#1,
+  fonttitle=\bfseries,
+  boxrule=0.6pt,
+  arc=2pt,
+  left=8pt,
+  right=8pt,
+  top=7pt,
+  bottom=7pt
+}
 
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{0.55em}
 \renewcommand{\arraystretch}{1.17}
-
-\title{\textbf{Phase 3 Final Submission Report}\\
-CPU Scheduling Simulator Mini OS Component}
-\author{Operating Systems Project}
-\date{\today}
+\setlist[itemize]{topsep=0.25em,itemsep=0.2em,leftmargin=1.5em}
 
 \begin{document}
-\maketitle
+\hypersetup{pageanchor=false}
 
-\begin{center}
-\begin{tabular}{ll}
+\begin{titlepage}
+\centering
+\vspace*{0.7cm}
+{\Large Operating Systems Project\par}
+\vspace{0.35cm}
+{\Huge\bfseries Phase 3 Final Submission Report\par}
+\vspace{0.35cm}
+{\LARGE CPU Scheduling Simulator Mini OS Component\par}
+\vspace{0.8cm}
+
+\begin{summarybox}
+\begin{tabularx}{0.92\linewidth}{>{\bfseries}p{0.30\linewidth}X}
+Project & CPU Scheduling Simulator \\
+Phase & Phase 3: Final Submission, complete project delivery \\
+Latest starter commit & \artifact{1e348bb} on 2026-05-06 \\
+Repository scope & Scheduler simulation, dashboard, reports, tests, fuzz harnesses, and tooling \\
+Main implementation & C11 simulator with a no-build browser dashboard in HTML/CSS/JavaScript \\
+Primary verification & \artifact{make test} plus sanitizer-enabled Clang test run \\
+\end{tabularx}
+\end{summarybox}
+
+\vspace{0.8cm}
+\begin{tabular}{cccc}
 \toprule
-\textbf{Project} & CPU Scheduling Simulator \\
-\textbf{Phase} & Phase 3: Final Submission \\
-\textbf{Repository Scope} & Scheduler simulation, dashboard, reports, tests, and tooling \\
-\textbf{Main Language} & C11, with browser-side JavaScript dashboard tooling \\
-\textbf{Primary Build Command} & \texttt{make} \\
+\textbf{Schedulers} & \textbf{C Test Suites} & \textbf{Python Tests} & \textbf{Dashboard} \\
+\midrule
+7 & 11 & 8 passing & Interactive, screenshot-backed \\
 \bottomrule
 \end{tabular}
-\end{center}
+
+\vfill
+{\large Generated from the repository report source on \today\par}
+\end{titlepage}
+
+\hypersetup{pageanchor=true}
+\pagenumbering{roman}
+\tableofcontents
+\newpage
+\pagenumbering{arabic}
 
 \section{Final Submission Checklist}
 
@@ -80,6 +142,13 @@ simulator proposed for the Operating Systems project. The project focuses on the
 CPU scheduler component of a mini operating system: it models process arrival,
 burst time, priority, ready-queue decisions, CPU idle periods, context-switch
 overhead, Gantt timelines, and scheduler performance metrics.
+
+\begin{evidencebox}{Final submission evidence}
+The report was updated from the latest repository commit,
+\artifact{1e348bb upgrade report to phase 3 and fix scheduler CSV labels}.
+The final verification used the current source tree, regenerated CSV/HTML
+evidence, and refreshed dashboard screenshots from a live local browser session.
+\end{evidencebox}
 
 \begin{longtable}{p{0.30\linewidth}p{0.18\linewidth}p{0.43\linewidth}}
 \toprule
@@ -104,7 +173,8 @@ README documentation & \statusdone & \texttt{README.md} documents
 requirements, build steps, run commands, workload format, algorithms, tests,
 dashboard usage, and grading flow. \\
 Screenshots and output evidence & \statusdone & Section~\ref{sec:results}
-contains live CLI output summaries, CSV evidence, and dashboard screenshots. \\
+contains current CLI output summaries, regenerated CSV evidence, and
+agent-browser dashboard screenshots. \\
 Validation evidence & \statusdone & \texttt{make test} passes all C and Python
 tests; an AddressSanitizer/UndefinedBehaviorSanitizer test build also passed. \\
 \bottomrule
@@ -328,9 +398,12 @@ rules for live visualization. \\
 AFL++ harnesses & Fuzz targets for parser and queue robustness campaigns. \\
 Clang sanitizers & AddressSanitizer and UndefinedBehaviorSanitizer validation
 used during final verification. \\
-Tectonic 0.16.9 & Local LaTeX compiler installed for report PDF generation. \\
-\texttt{scripts/visualize\_runs.py} & Converts simulator CSV exports into a
-standalone HTML report. \\
+TinyTeX and \texttt{latexmk} & Local LaTeX toolchain used for report PDF
+generation. \\
+\texttt{agent-browser} & Browser automation used to open the live dashboard
+and capture final screenshots for this report. \\
+CSV visualizer script & \path{scripts/visualize_runs.py} converts simulator
+CSV exports into a standalone HTML report. \\
 \bottomrule
 \end{longtable}
 
@@ -339,9 +412,11 @@ standalone HTML report. \\
 
 \subsection{Automated Test Results}
 
-The final verification run was:
+The final verification run used the documented Python dependencies inside a
+local virtual environment:
 
-\begin{lstlisting}[style=terminal,caption={Final command: make test}]
+\begin{lstlisting}[style=terminal,caption={Final command: venv-backed make test}]
+PATH="$PWD/.venv/bin:$PATH" make test
 test_process: 19/19 passed
 test_queue:   22/22 passed
 test_input:   22/22 passed
@@ -383,6 +458,45 @@ MLFQ & 13.00 & 19.50 & 1.50 & 1.00 & 0.15 & 9 \\
 \end{tabular}
 \end{center}
 
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[x=0.38cm,y=0.52cm]
+    \node[anchor=east,font=\small] at (0,0) {FCFS};
+    \draw[fill=heading!25,draw=heading] (0,0.15) rectangle (8.75,0.48);
+    \node[anchor=west,font=\scriptsize] at (9.0,0.31) {8.75};
+
+    \node[anchor=east,font=\small] at (0,-1) {SJF};
+    \draw[fill=heading!25,draw=heading] (0,-0.85) rectangle (7.75,-0.52);
+    \node[anchor=west,font=\scriptsize] at (8.0,-0.69) {7.75};
+
+    \node[anchor=east,font=\small] at (0,-2) {RR};
+    \draw[fill=warning!30,draw=warning] (0,-1.85) rectangle (12.75,-1.52);
+    \node[anchor=west,font=\scriptsize] at (13.0,-1.69) {12.75};
+
+    \node[anchor=east,font=\small] at (0,-3) {Priority};
+    \draw[fill=heading!25,draw=heading] (0,-2.85) rectangle (7.75,-2.52);
+    \node[anchor=west,font=\scriptsize] at (8.0,-2.69) {7.75};
+
+    \node[anchor=east,font=\small] at (0,-4) {SRTF};
+    \draw[fill=success!45,draw=success] (0,-3.85) rectangle (6.50,-3.52);
+    \node[anchor=west,font=\scriptsize] at (6.75,-3.69) {6.50};
+
+    \node[anchor=east,font=\small] at (0,-5) {P-Priority};
+    \draw[fill=success!45,draw=success] (0,-4.85) rectangle (6.50,-4.52);
+    \node[anchor=west,font=\scriptsize] at (6.75,-4.69) {6.50};
+
+    \node[anchor=east,font=\small] at (0,-6) {MLFQ};
+    \draw[fill=warning!30,draw=warning] (0,-5.85) rectangle (13.00,-5.52);
+    \node[anchor=west,font=\scriptsize] at (13.25,-5.69) {13.00};
+
+    \draw[->,thick,heading] (0,-6.7) -- (13.5,-6.7);
+    \node[anchor=west,font=\scriptsize] at (13.7,-6.7) {avg waiting time (ms)};
+  \end{tikzpicture}
+  \caption{Average waiting-time comparison for the basic workload. Lower
+  values are better; SRTF and Preemptive Priority are the best performers for
+  this input.}
+\end{figure}
+
 For this workload, SRTF and Preemptive Priority produce the lowest average
 waiting and turnaround times. MLFQ gives the fastest first response, while
 Round Robin improves response compared with non-preemptive policies at the
@@ -390,48 +504,74 @@ cost of more context switches.
 
 \subsection{CSV Export Evidence}
 
-The command below generated \texttt{reports/assets/phase3\_results\_final.csv}
-with correct labels for every algorithm:
+The command below generated
+\texttt{reports/assets/phase3\_agent\_browser\_results.csv} with correct
+labels and workload descriptors for every algorithm:
 
 \begin{lstlisting}[style=terminal]
-./cpu_scheduler -s basic -a all -e reports/assets/phase3_results_final.csv
-python3 scripts/visualize_runs.py reports/assets/phase3_results_final.csv \
-  -o reports/assets/phase3_results_final.html
+./cpu_scheduler -s basic -a all -e reports/assets/phase3_agent_browser_results.csv
+.venv/bin/python scripts/visualize_runs.py \
+  reports/assets/phase3_agent_browser_results.csv \
+  -o reports/assets/phase3_agent_browser_results.html
 \end{lstlisting}
 
 \begin{lstlisting}[style=terminal,caption={CSV rows generated by the final simulator}]
-algo,avg_waiting,avg_turnaround,avg_response,cpu_utilization,context_switches
-fcfs,8.750000,15.250000,8.750000,1.000000,0
-sjf,7.750000,14.250000,7.750000,1.000000,0
-rr,12.750000,19.250000,2.000000,1.000000,12
-priority,7.750000,14.250000,7.750000,1.000000,0
-srtf,6.500000,13.000000,4.250000,1.000000,4
-priorityp,6.500000,13.000000,4.250000,1.000000,4
-mlfq,13.000000,19.500000,1.500000,1.000000,9
+algo,n_procs,avg_burst,std_burst,avg_arrival_gap,max_priority,quantum,ctx_overhead,avg_waiting,avg_turnaround,avg_response,cpu_utilization,throughput,context_switches
+fcfs,4,6.500000,2.061553,1.000000,4,0,0,8.750000,15.250000,8.750000,1.000000,0.153846,0
+sjf,4,6.500000,2.061553,1.000000,4,0,0,7.750000,14.250000,7.750000,1.000000,0.153846,0
+rr,4,6.500000,2.061553,1.000000,4,2,0,12.750000,19.250000,2.000000,1.000000,0.153846,12
+priority,4,6.500000,2.061553,1.000000,4,0,0,7.750000,14.250000,7.750000,1.000000,0.153846,0
+srtf,4,6.500000,2.061553,1.000000,4,0,0,6.500000,13.000000,4.250000,1.000000,0.153846,4
+priorityp,4,6.500000,2.061553,1.000000,4,0,0,6.500000,13.000000,4.250000,1.000000,0.153846,4
+mlfq,4,6.500000,2.061553,1.000000,4,2,0,13.000000,19.500000,1.500000,1.000000,0.153846,9
 \end{lstlisting}
 
 \subsection{Dashboard Screenshots}
 
 \begin{figure}[H]
   \centering
-  \IfFileExists{reports/assets/dashboard_phase3_gantt_scrolled.png}{%
-    \includegraphics[width=0.92\linewidth]{reports/assets/dashboard_phase3_gantt_scrolled.png}
+  \IfFileExists{reports/assets/dashboard_phase3_agent_browser_overview.png}{%
+    \includegraphics[width=0.92\linewidth]{reports/assets/dashboard_phase3_agent_browser_overview.png}
   }{%
-    \fbox{\parbox{0.86\linewidth}{Dashboard Gantt screenshot file not found.}}
+    \fbox{\parbox{0.86\linewidth}{Dashboard overview screenshot file not found.}}
   }
-  \caption{Live browser dashboard showing the Gantt timeline for the active
-  workload.}
+  \caption{Live browser dashboard overview after loading the repository basic
+  workload. The editable process table, scheduler controls, and run controls
+  are visible in one view.}
 \end{figure}
 
 \begin{figure}[H]
   \centering
-  \IfFileExists{reports/assets/dashboard_phase3_metrics.png}{%
-    \includegraphics[width=0.92\linewidth]{reports/assets/dashboard_phase3_metrics.png}
+  \IfFileExists{reports/assets/dashboard_phase3_agent_browser_gantt.png}{%
+    \includegraphics[width=0.92\linewidth]{reports/assets/dashboard_phase3_agent_browser_gantt.png}
+  }{%
+    \fbox{\parbox{0.86\linewidth}{Dashboard Gantt screenshot file not found.}}
+  }
+  \caption{Live browser dashboard showing the all-algorithm Gantt comparison
+  for the same basic workload used in the CLI results.}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \IfFileExists{reports/assets/dashboard_phase3_agent_browser_metrics.png}{%
+    \includegraphics[width=0.92\linewidth]{reports/assets/dashboard_phase3_agent_browser_metrics.png}
   }{%
     \fbox{\parbox{0.86\linewidth}{Dashboard metrics screenshot file not found.}}
   }
-  \caption{Live browser dashboard showing aggregate metrics and process
-  execution details.}
+  \caption{Live browser dashboard showing aggregate metrics, process execution
+  details, and the FCFS baseline values after running all algorithms.}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \IfFileExists{reports/assets/dashboard_phase3_agent_browser_comparison.png}{%
+    \includegraphics[width=0.92\linewidth]{reports/assets/dashboard_phase3_agent_browser_comparison.png}
+  }{%
+    \fbox{\parbox{0.86\linewidth}{Dashboard comparison screenshot file not found.}}
+  }
+  \caption{Live browser dashboard comparison chart and summary table. It
+  highlights SRTF and Preemptive Priority as the best waiting/turnaround
+  performers and MLFQ as the best response-time performer for this workload.}
 \end{figure}
 
 \section{Challenges and Solutions}
@@ -455,8 +595,9 @@ metrics. \\
 Parser robustness & The input parser rejects malformed workloads, extra
 tokens, duplicate PIDs, NUL bytes, invalid bursts, and invalid negative fields. \\
 Keeping dashboard and C behavior aligned & The dashboard JavaScript mirrors
-the documented scheduler rules and is checked against the same sample
-workloads and expected metric behavior. \\
+the documented scheduler rules. The named dashboard presets were aligned with
+the repository workload files so CLI examples and browser demonstrations use
+the same inputs. \\
 Final documentation drift & The final pass updated the report, README-visible
 sample list, CSV labels, and tests so submitted documentation matches the
 current implementation. \\
@@ -481,20 +622,25 @@ advanced:
 
 \section{Team Contribution}
 
-The repository does not contain the official team member names or IDs. Replace
-the placeholder rows below with the final group information before submitting
-the PDF.
+\begin{evidencebox}{Contribution source}
+The table below is based on the repository Git history and the files touched by
+each contributor. Official student IDs are not stored in the repository, so the
+report records verifiable contribution areas instead of inventing IDs.
+\end{evidencebox}
 
-\begin{longtable}{p{0.26\linewidth}p{0.20\linewidth}p{0.43\linewidth}}
+\begin{longtable}{p{0.24\linewidth}p{0.18\linewidth}p{0.46\linewidth}}
 \toprule
-\textbf{Member} & \textbf{ID} & \textbf{Contribution} \\
+\textbf{Contributor} & \textbf{Git Evidence} & \textbf{Contribution} \\
 \midrule
-Member 1 & Student ID & Core C simulator, scheduler implementation, and CLI
-integration. \\
-Member 2 & Student ID & Browser dashboard, visualization, and interactive
-presentation features. \\
-Member 3 & Student ID & Test coverage, validation scripts, report writing, and
-submission packaging. \\
+MoAlsheqaih / Mohammed Al Sheqaih & 22 commits & Scheduler additions,
+dashboard integration, MLFQ and preemptive scheduler work, tests, README, and
+Phase 3 report assets. \\
+mohdm & 10 commits & Helper scripts, CSV visualization, process logger,
+requirements, metrics/visualization code, and earlier report work. \\
+RN848 & 7 commits & Dashboard specification/design assets, README/report
+iterations, process logger setup, and repository documentation. \\
+Abdulrahman Alhendawi & 3 commits & Dashboard UI, Gantt/metrics JavaScript,
+styling, and visualization report support. \\
 \bottomrule
 \end{longtable}
 
@@ -515,8 +661,19 @@ submission packaging. \\
 \begin{lstlisting}[style=terminal]
 make
 make test-c
-python3 -m pytest -q tests_py
-make test
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+.venv/bin/python -m pytest -q tests_py
+PATH="$PWD/.venv/bin:$PATH" make test
+\end{lstlisting}
+
+For the sanitizer validation used in this report:
+
+\begin{lstlisting}[style=terminal]
+make clean
+PATH="$PWD/.venv/bin:$PATH" make test CC=clang \
+  CFLAGS="-std=c11 -Wall -Wextra -Wpedantic -D_POSIX_C_SOURCE=200809L -Iinclude -fsanitize=address,undefined -fno-omit-frame-pointer -g" \
+  LDFLAGS="-lm -fsanitize=address,undefined"
 \end{lstlisting}
 
 \subsection{Run the Simulator}
@@ -529,6 +686,15 @@ make test
 ./cpu_scheduler -s basic -a all -e results.csv
 \end{lstlisting}
 
+\subsection{Generate CSV/HTML Evidence}
+
+\begin{lstlisting}[style=terminal]
+./cpu_scheduler -s basic -a all -e reports/assets/phase3_agent_browser_results.csv
+.venv/bin/python scripts/visualize_runs.py \
+  reports/assets/phase3_agent_browser_results.csv \
+  -o reports/assets/phase3_agent_browser_results.html
+\end{lstlisting}
+
 \subsection{Open the Browser Dashboard}
 
 \begin{lstlisting}[style=terminal]
@@ -536,21 +702,20 @@ cd dashboard
 python3 -m http.server 8080
 \end{lstlisting}
 
-Then open \texttt{http://localhost:8080}. The dashboard can also be opened
-directly from \texttt{dashboard/index.html}.
+Then open \url{http://localhost:8080}. The dashboard can also be opened
+directly from \path{dashboard/index.html}.
 
 \subsection{Generate the PDF Report}
 
-A local Tectonic compiler was installed for this final submission. From the
+The report was compiled locally with TinyTeX and \texttt{latexmk}. From the
 repository root:
 
 \begin{lstlisting}[style=terminal]
-.local/bin/tectonic reports/phase2_report.tex --outdir reports
+latexmk -pdf -interaction=nonstopmode -file-line-error \
+  -jobname=phase3_final_report -outdir=reports reports/phase3_final_report.tex
 \end{lstlisting}
 
-The source filename is kept as \texttt{phase2\_report.tex} because it was the
-existing report file in the repository, but the report content is now the
-Phase 3 final submission.
+The generated PDF is \path{reports/phase3_final_report.pdf}.
 
 \section{Conclusion}
 
